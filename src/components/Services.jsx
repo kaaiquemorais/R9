@@ -1,4 +1,4 @@
-import { Clock, DollarSign, Zap, ArrowRight, Scissors } from 'lucide-react'
+import { Clock, DollarSign, Zap, Scissors } from 'lucide-react'
 import { SERVICES } from '../data/services'
 
 function BeardIcon({ size = 18, className }) {
@@ -105,14 +105,9 @@ function ServiceCard({ service, onBook }) {
 
       {/* CTA */}
       <button
-        className={`relative w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all duration-300
-          ${service.highlight
-            ? 'bg-gradient-to-r from-primary to-primary-light text-white shadow-[0_0_20px_rgba(255,106,0,0.3)] hover:shadow-[0_0_30px_rgba(255,106,0,0.5)]'
-            : 'bg-surface-2 text-text group-hover:bg-primary/15 group-hover:text-primary border border-transparent group-hover:border-primary/30'
-          }`}
+        className="relative w-full flex items-center justify-center py-3 rounded-xl font-semibold text-sm transition-all duration-300 bg-gradient-to-r from-primary to-primary-light text-white shadow-[0_0_20px_rgba(255,106,0,0.3)] hover:shadow-[0_0_30px_rgba(255,106,0,0.5)]"
       >
         Agendar
-        <ArrowRight size={15} className="transition-transform duration-300 group-hover:translate-x-1" />
       </button>
     </div>
   )
