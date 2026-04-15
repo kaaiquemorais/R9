@@ -102,6 +102,14 @@ export default function BusinessInfo() {
             referrerPolicy="no-referrer-when-downgrade"
           />
         </div>
+
+        {/* Ponto de referência */}
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <MapPin size={14} className="text-primary flex-shrink-0" />
+          <p className="text-text-muted text-sm text-center">
+            Ao lado do <span className="text-primary font-semibold">Supermercado União — Unidade 5</span>
+          </p>
+        </div>
       </div>
     </section>
   )
