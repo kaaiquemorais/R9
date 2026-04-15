@@ -61,10 +61,12 @@ function ServiceCard({ service, onBook }) {
       </div>
 
       {/* Icon */}
-      <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center text-xl
-        ${service.highlight ? 'bg-gradient-to-br from-primary to-primary-light shadow-[0_0_20px_rgba(255,106,0,0.3)]' : 'bg-surface-2 group-hover:bg-primary/10 transition-colors duration-300'}`}
-      >
-        {service.icon}
+      <div className="relative w-12 h-12 rounded-full bg-black flex items-center justify-center overflow-hidden shadow-[0_0_12px_rgba(0,0,0,0.6)]">
+        <img
+          src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png"
+          alt="R9"
+          className="w-9 h-9 object-contain"
+        />
       </div>
 
       {/* Content */}
