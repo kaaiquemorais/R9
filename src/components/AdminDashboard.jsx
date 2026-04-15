@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { X, Check, XCircle, RefreshCw, Calendar, User, Clock, Scissors, Download, Sun, Moon } from 'lucide-react'
 import { format, isToday, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { getBookedSlots, cancelBooking, updateBookingStatus } from '../utils/calendar'
+import { getBookedSlots, cancelBooking, updateBookingStatus, rescheduleBooking } from '../utils/calendar'
 import { TIME_SLOTS } from '../data/services'
 import toast from 'react-hot-toast'
 
@@ -163,12 +163,12 @@ export default function AdminDashboard({ isOpen, onClose }) {
 
   if (!isOpen) return null
 
-  const login = () => {
-    if (pw === ADMIN_PASSWORD) { setAuth(true); setBookings(getBookedSlots()) }
+  const login = async () => {
+    if (pw === ADMIN_PASSWORD) { setAuth(true); setBookings(await getBookedSlots()) }
     else { setErr(true); setPw(''); setTimeout(() => setErr(false), 1500) }
   }
 
-  const refresh = () => { setBookings(getBookedSlots()); toast.success('Sincronizado') }
+  const refresh = async () => { setBookings(await getBookedSlots()); toast.success('Sincronizado') }
 
   const todayList    = bookings.filter(b => { try { return isToday(parseISO(b.dateStr)) } catch { return false } })
   const activeList   = bookings.filter(b => b.status !== 'cancelled')
@@ -353,9 +353,9 @@ export default function AdminDashboard({ isOpen, onClose }) {
                   ? <div style={{ textAlign: 'center', padding: '60px 0' }}><p style={{ ...th.monoSm }}>{th.mono ? '// SEM REGISTROS' : 'Nenhum agendamento'}</p></div>
                   : sorted.map(b => (
                     <BItem key={b.id} b={b} th={th}
-                      onConfirm={() => { updateBookingStatus(b.id,'confirmed'); setBookings(getBookedSlots()); toast.success('Confirmado') }}
-                      onCancel={() => { cancelBooking(b.id); setBookings(getBookedSlots()); toast.success('Cancelado') }}
-                      onReschedule={t => { const u=bookings.map(x=>x.id===b.id?{...x,time:t}:x); localStorage.setItem('r9_bookings',JSON.stringify(u)); setBookings(u); setReId(null); toast.success('Reagendado') }}
+                      onConfirm={async () => { await updateBookingStatus(b.id,'confirmed'); setBookings(await getBookedSlots()); toast.success('Confirmado') }}
+                      onCancel={async () => { await cancelBooking(b.id); setBookings(await getBookedSlots()); toast.success('Cancelado') }}
+                      onReschedule={async t => { await rescheduleBooking(b.id, t); setBookings(await getBookedSlots()); setReId(null); toast.success('Reagendado') }}
                       reMode={reId === b.id} onToggleRe={() => setReId(reId===b.id?null:b.id)}
                     />
                   ))}
@@ -449,7 +449,7 @@ export default function AdminDashboard({ isOpen, onClose }) {
                   {rangeFiltered.length === 0
                     ? <p style={{ ...th.monoSm, textAlign: 'center', padding: '20px 0' }}>{th.mono ? '// SEM DADOS' : 'Sem dados'}</p>
                     : [...rangeFiltered].sort((a,b)=>(a.dateStr||'').localeCompare(b.dateStr||'')).map(b => (
-                      <BItem key={b.id} b={b} th={th} readOnly onConfirm={()=>{}} onCancel={()=>{}} onReschedule={()=>{}} reMode={false} onToggleRe={()=>{}} />
+                      <BItem key={b.id} b={b} th={th} readOnly onConfirm={async()=>{}} onCancel={async()=>{}} onReschedule={async()=>{}} reMode={false} onToggleRe={()=>{}} />
                     ))}
                 </div>
               )}

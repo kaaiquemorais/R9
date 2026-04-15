@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Toaster } from 'react-hot-toast'
+import { syncFromSupabase } from './utils/calendar'
 import Hero from './components/Hero'
 import Services from './components/Services'
 import BookingModal from './components/BookingModal'
@@ -8,6 +9,8 @@ import AdminDashboard from './components/AdminDashboard'
 import Footer from './components/Footer'
 
 export default function App() {
+  useEffect(() => { syncFromSupabase() }, [])
+
   const [bookingOpen, setBookingOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
   const [preselectedService, setPreselectedService] = useState(null)

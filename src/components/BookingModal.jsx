@@ -122,7 +122,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
       createdAt: new Date().toISOString(),
     }
 
-    saveBooking(booking)
+    await saveBooking(booking)
 
     const url = generateGoogleCalendarUrl(booking)
     setGoogleCalUrl(url)
