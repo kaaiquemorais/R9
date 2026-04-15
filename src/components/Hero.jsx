@@ -26,12 +26,12 @@ export default function Hero({ onBookNow }) {
           <img
             src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png"
             alt="R9 Barbearia"
-            className="h-36 sm:h-56 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.35)]"
+            className="h-36 sm:h-44 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.35)]"
           />
         </div>
 
         {/* Headline */}
-        <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black leading-[0.95] tracking-tight mb-6 animate-slide-up">
+        <h1 className="text-5xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[0.95] tracking-tight mb-6 animate-slide-up">
           Agende seu horário
           <br />
           <span className="glow-text drop-shadow-[0_0_30px_rgba(255,106,0,0.4)]">
@@ -40,7 +40,7 @@ export default function Hero({ onBookNow }) {
         </h1>
 
         {/* Subheadline */}
-        <p className="text-text-muted text-lg sm:text-xl md:text-2xl font-light mb-8 max-w-xl mx-auto animate-slide-up">
+        <p className="text-text-muted text-lg sm:text-lg md:text-xl font-light mb-8 max-w-xl mx-auto animate-slide-up">
           Rápido, simples e sem espera
         </p>
 
