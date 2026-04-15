@@ -1,4 +1,4 @@
-import { Star, Clock, Scissors } from 'lucide-react'
+import { Scissors } from 'lucide-react'
 
 export default function Hero({ onBookNow }) {
   return (
@@ -26,7 +26,7 @@ export default function Hero({ onBookNow }) {
           <img
             src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png"
             alt="R9 Barbearia"
-            className="h-28 sm:h-32 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.35)]"
+            className="h-40 sm:h-48 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.35)]"
           />
         </div>
 
@@ -45,7 +45,7 @@ export default function Hero({ onBookNow }) {
         </p>
 
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-slide-up">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up">
           <button
             onClick={onBookNow}
             className="btn-primary animate-pulse-glow flex items-center gap-3 text-base"
@@ -60,32 +60,7 @@ export default function Hero({ onBookNow }) {
             Ver Serviços
           </a>
         </div>
-
-        {/* Stats */}
-        <div className="flex flex-row items-center justify-center gap-4 sm:gap-12 animate-fade-in">
-          <Stat icon={<Star size={18} className="text-primary" />} value="4.9" label="Avaliação" />
-          <div className="w-px h-8 bg-white/10" />
-          <Stat icon={<Clock size={18} className="text-primary" />} value="2min" label="Para agendar" />
-          <div className="w-px h-8 bg-white/10" />
-          <Stat icon={<Scissors size={18} className="text-primary" />} value="5+" label="Especialidades" />
-        </div>
       </div>
-
-
     </section>
-  )
-}
-
-function Stat({ icon, value, label }) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-        {icon}
-      </div>
-      <div className="text-left">
-        <div className="text-text font-bold text-lg leading-none">{value}</div>
-        <div className="text-text-muted text-xs mt-0.5">{label}</div>
-      </div>
-    </div>
   )
 }
