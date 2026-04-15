@@ -2,7 +2,6 @@ import { format, addMinutes } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { supabase } from '../lib/supabase'
 
-/* ── Formatação ── */
 export function formatDatePtBR(date) {
   return format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })
 }
@@ -12,131 +11,123 @@ export function formatDateShort(date) {
 
 /* ── Mapeamento Supabase ↔ JS ── */
 function toRow(b) {
-  return {
-    id:           b.id,
-    client_name:  b.clientName,
-    client_phone: b.clientPhone,
-    service:      b.service,
-    date_str:     b.dateStr,
-    time:         b.time,
-    reminder:     b.reminder,
-    status:       b.status || 'confirmed',
-    created_at:   b.createdAt,
-  }
+  return { id: b.id, client_name: b.clientName, client_phone: b.clientPhone, service: b.service, date_str: b.dateStr, time: b.time, reminder: b.reminder, status: b.status || 'confirmed', created_at: b.createdAt }
 }
-
 function fromRow(r) {
-  return {
-    id:          r.id,
-    clientName:  r.client_name,
-    clientPhone: r.client_phone,
-    service:     r.service,
-    dateStr:     r.date_str,
-    time:        r.time,
-    reminder:    r.reminder,
-    status:      r.status,
-    createdAt:   r.created_at,
-  }
+  return { id: r.id, clientName: r.client_name, clientPhone: r.client_phone, service: r.service, dateStr: r.date_str, time: r.time, reminder: r.reminder, status: r.status, createdAt: r.created_at }
 }
 
-/* ── localStorage helpers ── */
-function lsGet() { try { return JSON.parse(localStorage.getItem('r9_bookings') || '[]') } catch { return [] } }
-function lsSet(arr) { localStorage.setItem('r9_bookings', JSON.stringify(arr)) }
+/* ── localStorage ── */
+function lsGet()          { try { return JSON.parse(localStorage.getItem('r9_bookings') || '[]') } catch { return [] } }
+function lsSet(arr)       { localStorage.setItem('r9_bookings', JSON.stringify(arr)) }
+function lsGetBlocked()   { try { return JSON.parse(localStorage.getItem('r9_blocked')  || '[]') } catch { return [] } }
+function lsSetBlocked(arr){ localStorage.setItem('r9_blocked',  JSON.stringify(arr)) }
 
-/* ── Sincroniza Supabase → localStorage na inicialização ── */
+/* ── Sync inicial ── */
 export async function syncFromSupabase() {
   try {
-    const { data, error } = await supabase.from('bookings').select('*')
-    if (error) throw error
-    lsSet(data.map(fromRow))
-  } catch (e) {
-    console.warn('Supabase sync failed, using localStorage:', e.message)
-  }
+    const [{ data: b }, { data: bl }] = await Promise.all([
+      supabase.from('bookings').select('*'),
+      supabase.from('blocked_slots').select('*'),
+    ])
+    if (b)  lsSet(b.map(fromRow))
+    if (bl) lsSetBlocked(bl)
+  } catch (e) { console.warn('Supabase sync failed:', e.message) }
 }
 
-/* ── Busca todos os agendamentos ── */
+/* ── Agendamentos ── */
 export async function getBookedSlots() {
   try {
     const { data, error } = await supabase.from('bookings').select('*')
     if (error) throw error
-    const bookings = data.map(fromRow)
-    lsSet(bookings)
-    return bookings
-  } catch {
-    return lsGet()
-  }
+    const list = data.map(fromRow)
+    lsSet(list)
+    return list
+  } catch { return lsGet() }
 }
 
-/* ── Salva agendamento ── */
 export async function saveBooking(booking) {
-  // localStorage imediato para UI instantânea
-  const local = lsGet()
-  local.push(booking)
-  lsSet(local)
-  // Persiste no Supabase
+  const local = lsGet(); local.push(booking); lsSet(local)
   const { error } = await supabase.from('bookings').insert(toRow(booking))
   if (error) console.error('Supabase insert error:', error.message)
 }
 
-/* ── Verifica slot ocupado (síncrono via localStorage) ── */
-export function isSlotBooked(date, time) {
-  const dateStr = format(date, 'yyyy-MM-dd')
-  return lsGet().some(b => b.dateStr === dateStr && b.time === time)
-}
-
-/* ── Cancela agendamento ── */
-export async function cancelBooking(bookingId) {
-  lsSet(lsGet().filter(b => b.id !== bookingId))
-  const { error } = await supabase.from('bookings').delete().eq('id', bookingId)
+export async function cancelBooking(id) {
+  lsSet(lsGet().filter(b => b.id !== id))
+  const { error } = await supabase.from('bookings').delete().eq('id', id)
   if (error) console.error('Supabase delete error:', error.message)
 }
 
-/* ── Atualiza status ── */
-export async function updateBookingStatus(bookingId, status) {
-  lsSet(lsGet().map(b => b.id === bookingId ? { ...b, status } : b))
-  const { error } = await supabase.from('bookings').update({ status }).eq('id', bookingId)
+export async function updateBookingStatus(id, status) {
+  lsSet(lsGet().map(b => b.id === id ? { ...b, status } : b))
+  const { error } = await supabase.from('bookings').update({ status }).eq('id', id)
   if (error) console.error('Supabase update error:', error.message)
 }
 
-/* ── Reagenda horário ── */
-export async function rescheduleBooking(bookingId, newTime) {
-  lsSet(lsGet().map(b => b.id === bookingId ? { ...b, time: newTime } : b))
-  const { error } = await supabase.from('bookings').update({ time: newTime }).eq('id', bookingId)
+export async function rescheduleBooking(id, newTime) {
+  lsSet(lsGet().map(b => b.id === id ? { ...b, time: newTime } : b))
+  const { error } = await supabase.from('bookings').update({ time: newTime }).eq('id', id)
   if (error) console.error('Supabase reschedule error:', error.message)
+}
+
+/* ── Bloqueios ── */
+export async function getBlockedSlots() {
+  try {
+    const { data, error } = await supabase.from('blocked_slots').select('*')
+    if (error) throw error
+    lsSetBlocked(data)
+    return data
+  } catch { return lsGetBlocked() }
+}
+
+export async function blockSlot(dateStr, time = null) {
+  const id = `${dateStr}-${time ?? 'day'}-${Date.now()}`
+  const row = { id, date_str: dateStr, time: time ?? null, created_at: new Date().toISOString() }
+  const local = lsGetBlocked()
+  if (!local.some(b => b.date_str === dateStr && b.time === (time ?? null))) {
+    lsSetBlocked([...local, row])
+  }
+  const { error } = await supabase.from('blocked_slots').upsert(row)
+  if (error) console.error('Block slot error:', error.message)
+}
+
+export async function unblockSlot(id) {
+  lsSetBlocked(lsGetBlocked().filter(b => b.id !== id))
+  const { error } = await supabase.from('blocked_slots').delete().eq('id', id)
+  if (error) console.error('Unblock error:', error.message)
+}
+
+export function isSlotBooked(date, time) {
+  const dateStr = format(date, 'yyyy-MM-dd')
+  const blocked = lsGetBlocked()
+  if (blocked.some(b => b.date_str === dateStr && b.time === null)) return true
+  if (blocked.some(b => b.date_str === dateStr && b.time === time)) return true
+  return lsGet().some(b => b.dateStr === dateStr && b.time === time)
+}
+
+export function isDayFullyBlocked(date) {
+  const dateStr = format(date, 'yyyy-MM-dd')
+  return lsGetBlocked().some(b => b.date_str === dateStr && b.time === null)
 }
 
 /* ── Google Calendar ── */
 export function generateGoogleCalendarUrl(booking) {
   const { service, date, time, clientName } = booking
-  const [hours, minutes] = time.split(':').map(Number)
-  const startDate = new Date(date)
-  startDate.setHours(hours, minutes, 0)
-  const endDate = addMinutes(startDate, service.duration)
+  const [h, m] = time.split(':').map(Number)
+  const start = new Date(date); start.setHours(h, m, 0)
+  const end = addMinutes(start, service.duration)
   const fmt = d => format(d, "yyyyMMdd'T'HHmmss")
-  const title    = encodeURIComponent(`R9 Barbearia – ${service.name}`)
-  const details  = encodeURIComponent(`Agendamento: ${service.name}\nCliente: ${clientName}\nValor: ${service.priceDisplay}\nDuração: ${service.durationDisplay}`)
-  const location = encodeURIComponent('Rua Fernando de Noronha, 100, Bragança Paulista/SP')
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${fmt(startDate)}/${fmt(endDate)}&details=${details}&location=${location}&sf=true&output=xml`
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`R9 Barbearia – ${service.name}`)}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent(`Agendamento: ${service.name}\nCliente: ${clientName}\nValor: ${service.priceDisplay}`)}&location=${encodeURIComponent('Rua Fernando de Noronha, 100, Bragança Paulista/SP')}&sf=true&output=xml`
 }
 
 /* ── Notificações ── */
 export function scheduleNotification(booking, reminderMinutes) {
-  if (!('Notification' in window)) return
+  if (!('Notification' in window) || Notification.permission !== 'granted') return
   const { service, date, time } = booking
-  const [hours, minutes] = time.split(':').map(Number)
-  const appointmentDate = new Date(date)
-  appointmentDate.setHours(hours, minutes, 0)
-  const delay = new Date(appointmentDate.getTime() - reminderMinutes * 60 * 1000).getTime() - Date.now()
-  if (delay <= 0) return
-  if (Notification.permission === 'granted') {
-    setTimeout(() => {
-      new Notification('R9 Barbearia 💈', {
-        body: `Seu horário está chegando! ${service.name} às ${time}`,
-        icon: 'https://i.postimg.cc/zBrYSf50/R9-LOGO.png',
-        tag: `r9-reminder-${booking.id}`,
-      })
-    }, delay)
-  }
+  const [h, m] = time.split(':').map(Number)
+  const appt = new Date(date); appt.setHours(h, m, 0)
+  const delay = appt.getTime() - reminderMinutes * 60000 - Date.now()
+  if (delay > 0) setTimeout(() => new Notification('R9 Barbearia 💈', { body: `${service.name} às ${time}`, icon: 'https://i.postimg.cc/zBrYSf50/R9-LOGO.png', tag: `r9-${booking.id}` }), delay)
 }
 
 export async function requestNotificationPermission() {

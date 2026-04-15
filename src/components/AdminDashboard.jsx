@@ -1,182 +1,135 @@
 import { useState, useEffect } from 'react'
-import { X, Check, XCircle, RefreshCw, Calendar, User, Clock, Scissors, Download, Sun, Moon } from 'lucide-react'
+import { X, Check, XCircle, RefreshCw, Download, Users, Calendar, Clock, Scissors, Sun, Moon, Lock, Unlock, Trash2, User } from 'lucide-react'
 import { format, isToday, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { getBookedSlots, cancelBooking, updateBookingStatus, rescheduleBooking } from '../utils/calendar'
+import {
+  getBookedSlots, cancelBooking, updateBookingStatus, rescheduleBooking,
+  getBlockedSlots, blockSlot, unblockSlot,
+} from '../utils/calendar'
 import { TIME_SLOTS } from '../data/services'
 import toast from 'react-hot-toast'
 
 const ADMIN_PASSWORD = 'vet997'
 
-/* ── Theme tokens ── */
-const DARK = {
-  panel:        '#060606',
-  panelBorder:  '1px solid rgba(255,106,0,0.3)',
-  panelShadow:  '0 0 80px rgba(255,106,0,0.1), 0 0 200px rgba(0,0,0,1)',
-  headerBg:     'rgba(0,0,0,0.5)',
-  headerBorder: '1px solid rgba(255,106,0,0.12)',
-  sectionBorder:'1px solid rgba(255,106,0,0.1)',
-  cardBg:       'rgba(255,255,255,0.02)',
-  cardBorder:   '1px solid rgba(255,255,255,0.07)',
-  cardGlowBg:   'rgba(255,106,0,0.05)',
-  cardGlowBrd:  '1px solid rgba(255,106,0,0.3)',
-  inputBg:      'rgba(255,255,255,0.03)',
-  inputBorder:  '1px solid rgba(255,106,0,0.2)',
-  text:         'white',
-  textMuted:    'rgba(255,255,255,0.25)',
-  textSub:      'rgba(255,255,255,0.5)',
-  accent:       '#FF6A00',
-  green:        '#4ade80',
-  red:          '#f87171',
-  mono:         true,
-  cornerColor:  'rgba(255,106,0,0.6)',
-  scanlines:    true,
-  grid:         true,
-  topGlow:      true,
-  bottomGlow:   true,
-  pill:         (a) => ({
-    fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 900,
-    padding: '5px 10px', borderRadius: 3, cursor: 'pointer', transition: 'all 0.2s', border: 'none',
-    background: a ? 'rgba(255,106,0,0.1)' : 'transparent',
-    outline: a ? '1px solid rgba(255,106,0,0.4)' : '1px solid rgba(255,255,255,0.1)',
-    color: a ? '#FF6A00' : 'rgba(255,255,255,0.3)',
-  }),
-  tab:          (a) => ({
-    fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 900,
-    background: 'transparent', border: 'none', padding: '4px 10px', cursor: 'pointer',
-    color: a ? '#FF6A00' : 'rgba(255,255,255,0.25)',
-    borderBottom: a ? '1px solid #FF6A00' : '1px solid transparent',
-  }),
-  monoSm: { fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)' },
-  headerLabel: { fontFamily: 'monospace', fontSize: 11, letterSpacing: '0.25em', color: 'rgba(255,106,0,0.85)', fontWeight: 900 },
-  dot: { width: 6, height: 6, borderRadius: '50%', background: '#FF6A00', boxShadow: '0 0 8px 3px rgba(255,106,0,0.6)', marginRight: 6 },
-}
-
-const LIGHT = {
-  panel:        '#f8f9fa',
-  panelBorder:  '1px solid rgba(0,0,0,0.08)',
-  panelShadow:  '0 24px 80px rgba(0,0,0,0.2)',
-  headerBg:     'white',
-  headerBorder: '1px solid #f0f0f0',
-  sectionBorder:'1px solid #f0f0f0',
-  cardBg:       'white',
-  cardBorder:   '1px solid #ececec',
-  cardGlowBg:   '#fff7f0',
-  cardGlowBrd:  '1px solid #ffd4b0',
-  inputBg:      '#f9fafb',
-  inputBorder:  '1px solid #e5e7eb',
-  text:         '#111',
-  textMuted:    '#9ca3af',
-  textSub:      '#6b7280',
-  accent:       '#FF6A00',
-  green:        '#16a34a',
-  red:          '#dc2626',
-  mono:         false,
-  cornerColor:  'rgba(255,106,0,0.4)',
-  scanlines:    false,
-  grid:         false,
-  topGlow:      false,
-  bottomGlow:   false,
-  pill:         (a) => ({
-    fontSize: 12, fontWeight: 600,
-    padding: '6px 14px', borderRadius: 8, cursor: 'pointer', transition: 'all 0.15s', border: 'none',
-    background: a ? '#FF6A00' : '#f3f4f6',
-    color: a ? 'white' : '#6b7280',
-  }),
-  tab:          (a) => ({
-    fontSize: 13, fontWeight: 600, background: 'transparent', border: 'none', padding: '10px 20px', cursor: 'pointer',
-    color: a ? '#FF6A00' : '#9ca3af',
-    borderBottom: a ? '2px solid #FF6A00' : '2px solid transparent',
-    transition: 'all 0.15s',
-  }),
-  monoSm: { fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em' },
-  headerLabel: { fontSize: 15, fontWeight: 700, color: '#111' },
-  dot: { display: 'none' },
-}
-
-function Corner({ pos, color }) {
-  const transforms = { tl: 'none', tr: 'scaleX(-1)', bl: 'scaleY(-1)', br: 'scale(-1,-1)' }
-  const positions  = { tl: { top: 0, left: 0 }, tr: { top: 0, right: 0 }, bl: { bottom: 0, left: 0 }, br: { bottom: 0, right: 0 } }
-  return (
-    <svg width={12} height={12} viewBox="0 0 12 12" fill="none"
-      style={{ position: 'absolute', transform: transforms[pos], ...positions[pos] }}>
-      <path d="M1 11 L1 1 L11 1" stroke={color} strokeWidth="1.5"/>
-    </svg>
-  )
-}
-
-function HCard({ children, style, glow, th }) {
-  return (
-    <div style={{
-      position: 'relative',
-      background: glow ? th.cardGlowBg : th.cardBg,
-      border: glow ? th.cardGlowBrd : th.cardBorder,
-      borderRadius: th.mono ? 4 : 12,
-      boxShadow: th.mono ? 'none' : '0 1px 4px rgba(0,0,0,0.05)',
-      ...style,
-    }}>
-      {th.mono && <><Corner pos="tl" color={th.cornerColor}/><Corner pos="tr" color={th.cornerColor}/><Corner pos="bl" color={th.cornerColor}/><Corner pos="br" color={th.cornerColor}/></>}
-      {children}
-    </div>
-  )
-}
-
-function Blink() {
-  const [on, setOn] = useState(true)
-  useEffect(() => { const t = setInterval(() => setOn(v => !v), 500); return () => clearInterval(t) }, [])
-  return <span style={{ display: 'inline-block', width: 2, height: '0.85em', background: on ? '#FF6A00' : 'transparent', marginLeft: 2, verticalAlign: 'middle', borderRadius: 1 }} />
+/* ══════════════════════════════════════════
+   TOKENS DE TEMA
+══════════════════════════════════════════ */
+const themes = {
+  dark: {
+    bg:          '#0d0d0d',
+    panel:       '#111',
+    card:        '#1a1a1a',
+    cardBorder:  '#2a2a2a',
+    cardHover:   '#222',
+    header:      '#111',
+    headerBorder:'#222',
+    divider:     '#222',
+    text:        '#f0f0f0',
+    textSub:     '#888',
+    textMuted:   '#555',
+    accent:      '#FF6A00',
+    accentBg:    'rgba(255,106,0,0.12)',
+    accentBorder:'rgba(255,106,0,0.3)',
+    green:       '#4ade80',
+    greenBg:     'rgba(74,222,128,0.1)',
+    greenBorder: 'rgba(74,222,128,0.25)',
+    red:         '#f87171',
+    redBg:       'rgba(248,113,113,0.1)',
+    redBorder:   'rgba(248,113,113,0.25)',
+    amber:       '#fbbf24',
+    amberBg:     'rgba(251,191,36,0.1)',
+    amberBorder: 'rgba(251,191,36,0.25)',
+    inputBg:     '#1a1a1a',
+    inputBorder: '#333',
+    shadow:      '0 24px 60px rgba(0,0,0,0.6)',
+    panelBorder: '1px solid rgba(255,106,0,0.2)',
+    topGlow:     true,
+  },
+  light: {
+    bg:          '#f0f2f5',
+    panel:       '#fff',
+    card:        '#fff',
+    cardBorder:  '#e8e8e8',
+    cardHover:   '#fafafa',
+    header:      '#fff',
+    headerBorder:'#eeeeee',
+    divider:     '#eeeeee',
+    text:        '#111',
+    textSub:     '#6b7280',
+    textMuted:   '#9ca3af',
+    accent:      '#FF6A00',
+    accentBg:    '#fff4ee',
+    accentBorder:'#ffd0b0',
+    green:       '#16a34a',
+    greenBg:     '#f0fdf4',
+    greenBorder: '#bbf7d0',
+    red:         '#dc2626',
+    redBg:       '#fef2f2',
+    redBorder:   '#fecaca',
+    amber:       '#d97706',
+    amberBg:     '#fffbeb',
+    amberBorder: '#fde68a',
+    inputBg:     '#f9fafb',
+    inputBorder: '#e5e7eb',
+    shadow:      '0 24px 60px rgba(0,0,0,0.1)',
+    panelBorder: '1px solid #e8e8e8',
+    topGlow:     false,
+  },
 }
 
 function exportCSV(bookings, label) {
   const rows = [['Nome', 'Telefone', 'Serviço', 'Preço', 'Data', 'Hora', 'Status']]
   bookings.forEach(b => rows.push([b.clientName||'', b.clientPhone||'', b.service?.name||'', b.service?.priceDisplay||'', b.dateStr||'', b.time||'', b.status||'confirmado']))
   const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n')
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
-  const a = document.createElement('a'); a.href = url; a.download = `r9-${label}.csv`; a.click()
+  const a = document.createElement('a'); a.href=url; a.download=`r9-${label}.csv`; a.click()
   URL.revokeObjectURL(url)
-  toast.success('Relatório exportado!')
+  toast.success('CSV exportado!')
 }
 
 export default function AdminDashboard({ isOpen, onClose }) {
-  const [auth, setAuth]       = useState(false)
-  const [pw, setPw]           = useState('')
-  const [err, setErr]         = useState(false)
+  const [auth, setAuth]         = useState(false)
+  const [pw, setPw]             = useState('')
+  const [err, setErr]           = useState(false)
   const [bookings, setBookings] = useState([])
-  const [tab, setTab]         = useState('agenda')
-  const [filter, setFilter]   = useState('today')
+  const [blocked, setBlocked]   = useState([])
+  const [tab, setTab]           = useState('agenda')
+  const [filter, setFilter]     = useState('today')
   const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo]   = useState('')
-  const [reId, setReId]       = useState(null)
-  const [bootText, setBootText] = useState('')
-  const [theme, setTheme]     = useState('dark')
+  const [dateTo, setDateTo]     = useState('')
+  const [reId, setReId]         = useState(null)
+  const [theme, setTheme]       = useState('dark')
 
-  const th = theme === 'dark' ? DARK : LIGHT
+  // Bloqueios state
+  const [blockDate, setBlockDate]   = useState('')
+  const [blockAllDay, setBlockAllDay] = useState(true)
+  const [blockTimes, setBlockTimes] = useState([])
 
-  useEffect(() => {
-    if (!isOpen || auth) return
-    const msg = 'SISTEMA R9 // ACESSO RESTRITO'
-    let i = 0; setBootText('')
-    const t = setInterval(() => { i++; setBootText(msg.slice(0, i)); if (i >= msg.length) clearInterval(t) }, 50)
-    return () => clearInterval(t)
-  }, [isOpen, auth])
+  const T = themes[theme]
 
   if (!isOpen) return null
 
   const login = async () => {
-    if (pw === ADMIN_PASSWORD) { setAuth(true); setBookings(await getBookedSlots()) }
-    else { setErr(true); setPw(''); setTimeout(() => setErr(false), 1500) }
+    if (pw === ADMIN_PASSWORD) {
+      setAuth(true)
+      const [b, bl] = await Promise.all([getBookedSlots(), getBlockedSlots()])
+      setBookings(b); setBlocked(bl)
+    } else { setErr(true); setPw(''); setTimeout(() => setErr(false), 1500) }
   }
 
-  const refresh = async () => { setBookings(await getBookedSlots()); toast.success('Sincronizado') }
+  const refresh = async () => {
+    const [b, bl] = await Promise.all([getBookedSlots(), getBlockedSlots()])
+    setBookings(b); setBlocked(bl); toast.success('Atualizado!')
+  }
 
+  /* ── Computed ── */
   const todayList    = bookings.filter(b => { try { return isToday(parseISO(b.dateStr)) } catch { return false } })
   const activeList   = bookings.filter(b => b.status !== 'cancelled')
   const cancelledCount = bookings.filter(b => b.status === 'cancelled').length
-  const totalRevenue = activeList.reduce((a, b) => a + (b.service?.price || 0), 0)
-  const todayRevenue = todayList.filter(b => b.status !== 'cancelled').reduce((a, b) => a + (b.service?.price || 0), 0)
+  const totalRevenue = activeList.reduce((s, b) => s + (b.service?.price || 0), 0)
+  const todayRevenue = todayList.filter(b => b.status !== 'cancelled').reduce((s, b) => s + (b.service?.price || 0), 0)
   const freeTodaySlots = TIME_SLOTS.filter(t => !todayList.map(b => b.time).includes(t))
-  const serviceBreakdown = activeList.reduce((acc, b) => { const n = b.service?.name||'Outro'; acc[n]=(acc[n]||0)+1; return acc }, {})
 
   const getFiltered = () => bookings.filter(b => {
     try {
@@ -198,326 +151,375 @@ export default function AdminDashboard({ isOpen, onClose }) {
     catch { return false }
   })
 
-  const iconBtn = (onClick, children, title) => ({
-    onClick, title,
-    style: {
-      background: th.mono ? 'rgba(255,106,0,0.06)' : '#f3f4f6',
-      border: th.mono ? '1px solid rgba(255,106,0,0.2)' : '1px solid #e5e7eb',
-      borderRadius: th.mono ? 3 : 8,
-      width: 28, height: 28,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-    },
+  const serviceBreakdown = Object.entries(
+    activeList.reduce((acc, b) => { const n = b.service?.name||'Outro'; acc[n]=(acc[n]||0)+1; return acc }, {})
+  ).sort((a, b) => b[1] - a[1])
+
+  /* ── Block handlers ── */
+  const handleBlock = async () => {
+    if (!blockDate) { toast.error('Selecione uma data'); return }
+    if (blockAllDay) {
+      await blockSlot(blockDate, null)
+      toast.success('Dia bloqueado!')
+    } else {
+      if (!blockTimes.length) { toast.error('Selecione ao menos um horário'); return }
+      await Promise.all(blockTimes.map(t => blockSlot(blockDate, t)))
+      toast.success(`${blockTimes.length} horário(s) bloqueado(s)!`)
+    }
+    setBlocked(await getBlockedSlots())
+    setBlockTimes([])
+  }
+
+  const handleUnblock = async (id) => {
+    await unblockSlot(id)
+    setBlocked(await getBlockedSlots())
+    toast.success('Desbloqueado!')
+  }
+
+  const toggleBlockTime = (t) =>
+    setBlockTimes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
+
+  /* ── Shared style helpers ── */
+  const card = (extra = {}) => ({
+    background: T.card,
+    border: `1px solid ${T.cardBorder}`,
+    borderRadius: 12,
+    ...extra,
   })
 
+  const pill = (active, color = 'accent') => {
+    const c = { accent: [T.accentBg, T.accent, T.accentBorder], green: [T.greenBg, T.green, T.greenBorder], red: [T.redBg, T.red, T.redBorder] }[color]
+    return {
+      padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, border: 'none',
+      background: active ? c[0] : 'transparent',
+      color: active ? c[1] : T.textSub,
+      outline: active ? `1px solid ${c[2]}` : `1px solid transparent`,
+      transition: 'all 0.15s',
+    }
+  }
+
+  const iconBtn = { background: T.card, border: `1px solid ${T.cardBorder}`, borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }
+
+  const sectionTitle = { fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }
+
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' }}>
-      <div style={{ position: 'absolute', inset: 0, background: th.mono ? 'rgba(0,0,0,0.93)' : 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)' }} onClick={onClose} />
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: T.bg === '#0d0d0d' ? 'rgba(0,0,0,0.8)' : 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}
+      onClick={onClose}>
 
-      <div style={{
-        position: 'relative', width: '100%', maxWidth: 680, maxHeight: '92vh',
-        display: 'flex', flexDirection: 'column',
-        background: th.panel, border: th.panelBorder, borderRadius: th.mono ? 6 : 16,
-        boxShadow: th.panelShadow, overflow: 'hidden',
-      }}>
+      <div style={{ position: 'relative', width: '100%', maxWidth: 700, maxHeight: '94vh', display: 'flex', flexDirection: 'column', background: T.panel, borderRadius: 20, border: T.panelBorder, boxShadow: T.shadow, overflow: 'hidden' }}
+        onClick={e => e.stopPropagation()}>
 
-        {/* Dark mode decorations */}
-        {th.grid && <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, backgroundImage: 'linear-gradient(rgba(255,106,0,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,106,0,0.03) 1px,transparent 1px)', backgroundSize: '44px 44px' }} />}
-        {th.scanlines && <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.15) 3px,rgba(0,0,0,0.15) 4px)' }} />}
-        {th.topGlow    && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,transparent,rgba(255,106,0,0.9),transparent)', zIndex: 1 }} />}
-        {th.bottomGlow && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,transparent,rgba(255,106,0,0.5),transparent)', zIndex: 3 }} />}
+        {/* Top accent */}
+        {T.topGlow && <div style={{ height: 2, background: 'linear-gradient(90deg, transparent, #FF6A00, transparent)', flexShrink: 0 }} />}
 
         {/* ── HEADER ── */}
-        <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: th.mono ? '10px 16px' : '14px 20px', borderBottom: th.headerBorder, background: th.headerBg, flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            {th.mono && <div style={th.dot} />}
-            {!th.mono && <div style={{ width: 32, height: 32, borderRadius: 8, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}><img src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png" alt="R9" style={{ height: 22, objectFit: 'contain' }} /></div>}
-            <span style={th.headerLabel}>{auth ? (th.mono ? 'R9 // PAINEL' : 'Painel Admin') : (th.mono ? 'R9 // ACESSO' : 'Acesso Restrito')}</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: `1px solid ${T.headerBorder}`, background: T.header, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 10, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png" alt="R9" style={{ height: 24, objectFit: 'contain' }} />
+            </div>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0, lineHeight: 1.3 }}>
+                {auth ? 'Painel Admin' : 'R9 Barbearia'}
+              </p>
+              <p style={{ fontSize: 11, color: T.textMuted, margin: 0 }}>
+                {auth ? 'Gerencie seus agendamentos' : 'Acesso restrito'}
+              </p>
+            </div>
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            {auth && (
-              <>
-                <button style={th.tab(tab === 'agenda')}    onClick={() => setTab('agenda')}>   {th.mono ? 'AGENDA'    : 'Agenda'}   </button>
-                <button style={th.tab(tab === 'relatorio')} onClick={() => setTab('relatorio')}>{th.mono ? 'RELATÓRIO' : 'Relatório'}</button>
-                <button {...iconBtn(refresh, null, 'Sincronizar')}>
-                  <RefreshCw size={11} color={th.mono ? '#FF6A00' : '#6b7280'} />
-                </button>
-              </>
-            )}
-            {/* Theme toggle */}
-            <button
-              onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-              title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
-              style={{
-                background: th.mono ? 'rgba(255,255,255,0.04)' : '#f3f4f6',
-                border: th.mono ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e5e7eb',
-                borderRadius: th.mono ? 3 : 8,
-                width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-              }}>
-              {theme === 'dark'
-                ? <Sun  size={12} color={th.mono ? 'rgba(255,255,255,0.5)' : '#6b7280'} />
-                : <Moon size={12} color="#6b7280" />}
+          <div style={{ display: 'flex', gap: 6 }}>
+            {auth && <button style={iconBtn} onClick={refresh} title="Atualizar"><RefreshCw size={13} color={T.textSub} /></button>}
+            <button style={iconBtn} onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} title="Alternar tema">
+              {theme === 'dark' ? <Sun size={13} color={T.textSub} /> : <Moon size={13} color={T.textSub} />}
             </button>
-            <button
-              onClick={onClose}
-              style={{
-                background: th.mono ? 'rgba(255,255,255,0.03)' : '#f3f4f6',
-                border: th.mono ? '1px solid rgba(255,255,255,0.07)' : '1px solid #e5e7eb',
-                borderRadius: th.mono ? 3 : 8,
-                width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-              }}>
-              <X size={12} color={th.mono ? 'rgba(255,255,255,0.4)' : '#6b7280'} />
-            </button>
+            <button style={iconBtn} onClick={onClose} title="Fechar"><X size={13} color={T.textSub} /></button>
           </div>
         </div>
 
-        {/* ── CONTENT ── */}
-        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-
-          {/* ── LOGIN ── */}
-          {!auth && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: 28, padding: 40 }}>
-              {th.mono && <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%,-50%)', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,106,0,0.06) 0%,transparent 70%)', pointerEvents: 'none' }} />}
-
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                {th.mono
-                  ? <img src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png" alt="R9" style={{ height: 72, objectFit: 'contain' }} />
-                  : <div style={{ width: 64, height: 64, borderRadius: 16, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}><img src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png" alt="R9" style={{ height: 44, objectFit: 'contain' }} /></div>
-                }
-                {th.mono && <p style={{ fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.2em', color: 'rgba(255,106,0,0.5)', minHeight: 14 }}>{bootText}<Blink /></p>}
-                {!th.mono && <div style={{ textAlign: 'center' }}><p style={{ fontSize: 18, fontWeight: 800, color: '#111', margin: '0 0 4px' }}>Bem-vindo</p><p style={{ fontSize: 13, color: '#9ca3af', margin: 0 }}>Digite sua senha para continuar</p></div>}
-              </div>
-
-              <div style={{ width: '100%', maxWidth: 260, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <HCard th={th} glow style={{ padding: th.mono ? 2 : 0, borderRadius: th.mono ? 4 : 12 }}>
-                  <input
-                    type="password" value={pw}
-                    onChange={e => { setPw(e.target.value); setErr(false) }}
-                    onKeyDown={e => e.key === 'Enter' && login()}
-                    placeholder={th.mono ? '· · · · · · ·' : 'Senha'}
-                    style={{
-                      width: '100%', background: 'transparent', border: 'none', outline: 'none',
-                      textAlign: 'center', padding: '12px 16px', boxSizing: 'border-box',
-                      fontFamily: th.mono ? 'monospace' : 'inherit',
-                      fontSize: th.mono ? 14 : 15,
-                      letterSpacing: th.mono ? '0.4em' : 'normal',
-                      color: err ? '#f87171' : (th.mono ? '#FF6A00' : '#111'),
-                      caretColor: '#FF6A00',
-                    }}
-                  />
-                </HCard>
-                {err && <p style={{ fontFamily: th.mono ? 'monospace' : 'inherit', fontSize: th.mono ? 10 : 12, letterSpacing: th.mono ? '0.2em' : 'normal', color: '#f87171', textAlign: 'center' }}>{th.mono ? '// ACESSO NEGADO' : 'Senha incorreta'}</p>}
-                <button onClick={login} style={{
-                  width: '100%', padding: '12px 0',
-                  fontFamily: th.mono ? 'monospace' : 'inherit',
-                  fontSize: th.mono ? 11 : 14, letterSpacing: th.mono ? '0.3em' : 'normal',
-                  fontWeight: 900, textTransform: th.mono ? 'uppercase' : 'none',
-                  background: 'linear-gradient(135deg,#FF6A00,#FF8C00)', color: th.mono ? '#000' : 'white',
-                  border: 'none', borderRadius: th.mono ? 4 : 12, cursor: 'pointer',
-                  boxShadow: '0 0 24px rgba(255,106,0,0.35)',
-                }}>
-                  {th.mono ? 'ACESSAR SISTEMA' : 'Entrar'}
-                </button>
-              </div>
+        {/* ── LOGIN ── */}
+        {!auth && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20, padding: '48px 40px' }}>
+            <div style={{ width: 68, height: 68, borderRadius: 18, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 30px rgba(0,0,0,0.3)' }}>
+              <img src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png" alt="R9" style={{ height: 46, objectFit: 'contain' }} />
             </div>
-          )}
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: 20, fontWeight: 800, color: T.text, margin: '0 0 4px' }}>Bem-vindo</p>
+              <p style={{ fontSize: 13, color: T.textSub, margin: 0 }}>Digite a senha para acessar o painel</p>
+            </div>
+            <div style={{ width: '100%', maxWidth: 290, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <input type="password" value={pw}
+                onChange={e => { setPw(e.target.value); setErr(false) }}
+                onKeyDown={e => e.key === 'Enter' && login()}
+                placeholder="Senha"
+                style={{ width: '100%', background: T.inputBg, border: `1.5px solid ${err ? T.red : T.inputBorder}`, borderRadius: 12, outline: 'none', padding: '13px 16px', fontSize: 15, color: T.text, boxSizing: 'border-box', transition: 'border-color 0.2s' }}
+              />
+              {err && <p style={{ fontSize: 12, color: T.red, textAlign: 'center', margin: 0 }}>Senha incorreta. Tente novamente.</p>}
+              <button onClick={login} style={{ width: '100%', padding: '13px 0', fontSize: 14, fontWeight: 700, background: 'linear-gradient(135deg,#FF6A00,#FF8C00)', color: 'white', border: 'none', borderRadius: 12, cursor: 'pointer', boxShadow: '0 4px 20px rgba(255,106,0,0.35)' }}>
+                Entrar
+              </button>
+            </div>
+          </div>
+        )}
 
-          {/* ── AGENDA ── */}
-          {auth && tab === 'agenda' && (
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-              {/* Stats */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, padding: th.mono ? '12px 16px' : '14px 20px', borderBottom: th.sectionBorder, flexShrink: 0 }}>
-                {[
-                  { label: th.mono ? 'HOJE'    : 'Hoje',     value: todayList.length,    color: '#FF6A00', glow: true },
-                  { label: th.mono ? 'ATIVOS'  : 'Ativos',   value: activeList.length,   color: th.text },
-                  { label: th.mono ? 'LIVRES'  : 'Livres',   value: freeTodaySlots.length, color: th.green },
-                  { label: th.mono ? 'CANCEL.' : 'Cancelados', value: cancelledCount,    color: th.red },
-                ].map(s => (
-                  <HCard key={s.label} th={th} glow={s.glow} style={{ padding: th.mono ? '10px 8px' : '12px 10px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: s.color, lineHeight: 1, fontFamily: th.mono ? 'monospace' : 'inherit' }}>{s.value}</div>
-                    <div style={{ ...th.monoSm, marginTop: 4 }}>{s.label}</div>
-                  </HCard>
-                ))}
-              </div>
+        {/* ── DASHBOARD ── */}
+        {auth && (
+          <>
+            {/* Tabs */}
+            <div style={{ display: 'flex', borderBottom: `1px solid ${T.divider}`, background: T.header, flexShrink: 0 }}>
+              {[['agenda','Agenda'],['relatorio','Relatório'],['bloqueios','Bloqueios']].map(([k,l]) => (
+                <button key={k} onClick={() => setTab(k)} style={{ flex: 1, padding: '12px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer', background: 'transparent', border: 'none', color: tab===k ? T.accent : T.textSub, borderBottom: `2px solid ${tab===k ? T.accent : 'transparent'}`, transition: 'all 0.15s' }}>{l}</button>
+              ))}
+            </div>
 
-              {/* Filters */}
-              <div style={{ display: 'flex', gap: 6, padding: th.mono ? '8px 16px' : '10px 20px', borderBottom: th.sectionBorder, flexShrink: 0, flexWrap: 'wrap' }}>
-                {[['today', th.mono ? 'HOJE' : 'Hoje'], ['active', th.mono ? 'ATIVOS' : 'Ativos'], ['cancelled', th.mono ? 'CANCEL.' : 'Cancelados'], ['all', th.mono ? 'TODOS' : 'Todos']].map(([f, l]) => (
-                  <button key={f} onClick={() => setFilter(f)} style={th.pill(filter === f)}>{l}</button>
-                ))}
-              </div>
+            {/* ── AGENDA ── */}
+            {tab === 'agenda' && (
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
 
-              {/* List */}
-              <div style={{ overflowY: 'auto', flex: 1, padding: th.mono ? 12 : '12px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {sorted.length === 0
-                  ? <div style={{ textAlign: 'center', padding: '60px 0' }}><p style={{ ...th.monoSm }}>{th.mono ? '// SEM REGISTROS' : 'Nenhum agendamento'}</p></div>
-                  : sorted.map(b => (
-                    <BItem key={b.id} b={b} th={th}
-                      onConfirm={async () => { await updateBookingStatus(b.id,'confirmed'); setBookings(await getBookedSlots()); toast.success('Confirmado') }}
-                      onCancel={async () => { await cancelBooking(b.id); setBookings(await getBookedSlots()); toast.success('Cancelado') }}
-                      onReschedule={async t => { await rescheduleBooking(b.id, t); setBookings(await getBookedSlots()); setReId(null); toast.success('Reagendado') }}
-                      reMode={reId === b.id} onToggleRe={() => setReId(reId===b.id?null:b.id)}
-                    />
+                {/* Stats */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, padding: '16px 20px', flexShrink: 0 }}>
+                  {[
+                    { label: 'Hoje',      value: todayList.length,      bg: T.accentBg, border: T.accentBorder, color: T.accent },
+                    { label: 'Ativos',    value: activeList.length,     bg: T.card,     border: T.cardBorder,   color: T.text },
+                    { label: 'Disponíveis', value: freeTodaySlots.length, bg: T.greenBg, border: T.greenBorder, color: T.green },
+                    { label: 'Cancelados', value: cancelledCount,        bg: T.redBg,   border: T.redBorder,    color: T.red },
+                  ].map(s => (
+                    <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 26, fontWeight: 800, color: s.color, margin: '0 0 2px', lineHeight: 1 }}>{s.value}</p>
+                      <p style={{ fontSize: 11, color: T.textSub, margin: 0, fontWeight: 500 }}>{s.label}</p>
+                    </div>
                   ))}
-              </div>
+                </div>
 
-              {/* Free slots */}
-              {filter === 'today' && freeTodaySlots.length > 0 && (
-                <div style={{ padding: th.mono ? '10px 16px' : '12px 20px', borderTop: th.sectionBorder, flexShrink: 0 }}>
-                  <p style={{ ...th.monoSm, marginBottom: 8 }}>{th.mono ? '// SLOTS LIVRES HOJE' : 'Horários disponíveis hoje'}</p>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {freeTodaySlots.map(t => (
-                      <span key={t} style={{ fontSize: th.mono ? 10 : 12, fontWeight: 700, fontFamily: th.mono ? 'monospace' : 'inherit', padding: '4px 10px', background: th.mono ? 'rgba(74,222,128,0.07)' : '#f0fdf4', border: th.mono ? '1px solid rgba(74,222,128,0.2)' : '1px solid #bbf7d0', color: th.green, borderRadius: th.mono ? 3 : 8 }}>{t}</span>
+                {/* Filters */}
+                <div style={{ display: 'flex', gap: 6, padding: '0 20px 14px', flexShrink: 0 }}>
+                  {[['today','Hoje'],['active','Ativos'],['cancelled','Cancelados'],['all','Todos']].map(([f,l]) => (
+                    <button key={f} onClick={() => setFilter(f)} style={pill(filter===f)}>{l}</button>
+                  ))}
+                </div>
+
+                {/* List */}
+                <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {sorted.length === 0
+                    ? <div style={{ textAlign: 'center', padding: '60px 0', color: T.textMuted }}><Calendar size={32} color={T.cardBorder} style={{ margin: '0 auto 10px' }} /><p style={{ fontSize: 13, margin: 0 }}>Nenhum agendamento encontrado</p></div>
+                    : sorted.map(b => (
+                      <BookingCard key={b.id} b={b} T={T}
+                        onConfirm={async () => { await updateBookingStatus(b.id,'confirmed'); setBookings(await getBookedSlots()); toast.success('Confirmado!') }}
+                        onCancel={async () => { await cancelBooking(b.id); setBookings(await getBookedSlots()); toast.success('Cancelado') }}
+                        onReschedule={async t => { await rescheduleBooking(b.id,t); setBookings(await getBookedSlots()); setReId(null); toast.success('Reagendado!') }}
+                        reMode={reId===b.id} onToggleRe={() => setReId(reId===b.id?null:b.id)}
+                      />
+                    ))}
+                </div>
+
+                {/* Free slots */}
+                {filter === 'today' && freeTodaySlots.length > 0 && (
+                  <div style={{ padding: '12px 20px', borderTop: `1px solid ${T.divider}`, flexShrink: 0 }}>
+                    <p style={sectionTitle}>Horários disponíveis hoje</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {freeTodaySlots.map(t => (
+                        <span key={t} style={{ fontSize: 12, fontWeight: 600, padding: '4px 10px', background: T.greenBg, border: `1px solid ${T.greenBorder}`, color: T.green, borderRadius: 8 }}>{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── RELATÓRIO ── */}
+            {tab === 'relatorio' && (
+              <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+                {/* Revenue cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+                  {[
+                    { label: 'Receita Total',  value: `R$ ${totalRevenue.toFixed(2).replace('.',',')}`, sub: `${activeList.length} ativos`, bg: T.accentBg, border: T.accentBorder, color: T.accent },
+                    { label: 'Receita Hoje',   value: `R$ ${todayRevenue.toFixed(2).replace('.',',')}`,  sub: `${todayList.filter(b=>b.status!=='cancelled').length} hoje`, bg: T.card, border: T.cardBorder, color: T.text },
+                    { label: 'Cancelamentos',  value: cancelledCount,  sub: 'total',   bg: T.redBg, border: T.redBorder, color: T.red },
+                  ].map(c => (
+                    <div key={c.label} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 12, padding: '14px 16px' }}>
+                      <p style={{ ...sectionTitle, marginBottom: 6 }}>{c.label}</p>
+                      <p style={{ fontSize: 22, fontWeight: 800, color: c.color, margin: '0 0 2px' }}>{c.value}</p>
+                      <p style={{ fontSize: 11, color: T.textMuted, margin: 0 }}>{c.sub}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Services */}
+                <div style={card({ padding: 16 })}>
+                  <p style={sectionTitle}>Serviços mais agendados</p>
+                  {serviceBreakdown.length === 0
+                    ? <p style={{ fontSize: 13, color: T.textMuted, margin: 0 }}>Sem dados</p>
+                    : serviceBreakdown.map(([name, count]) => {
+                      const pct = activeList.length > 0 ? Math.round((count/activeList.length)*100) : 0
+                      return (
+                        <div key={name} style={{ marginBottom: 12 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                            <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{name}</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: T.accent }}>{count}× · {pct}%</span>
+                          </div>
+                          <div style={{ height: 5, background: T.cardBorder, borderRadius: 99 }}>
+                            <div style={{ height: 5, width: `${pct}%`, background: 'linear-gradient(90deg,#FF6A00,#FF8C00)', borderRadius: 99, transition: 'width 0.6s' }} />
+                          </div>
+                        </div>
+                      )
+                    })}
+                </div>
+
+                {/* Export */}
+                <div style={card({ padding: 16 })}>
+                  <p style={sectionTitle}>Exportar CSV</p>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 10 }}>
+                    {[['De', dateFrom, setDateFrom],['Até', dateTo, setDateTo]].map(([lbl,val,setter]) => (
+                      <div key={lbl} style={{ flex: 1, minWidth: 120 }}>
+                        <p style={{ ...sectionTitle, marginBottom: 5 }}>{lbl}</p>
+                        <input type="date" value={val} onChange={e=>setter(e.target.value)} style={{ width: '100%', background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '9px 12px', outline: 'none', fontSize: 13, color: T.text, boxSizing: 'border-box' }} />
+                      </div>
+                    ))}
+                    <button onClick={() => exportCSV(rangeFiltered.length>0?rangeFiltered:bookings, dateFrom&&dateTo?`${dateFrom}_${dateTo}`:'todos')}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', background: 'linear-gradient(135deg,#FF6A00,#FF8C00)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
+                      <Download size={14} /> Baixar
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {[['Hoje', ()=>exportCSV(todayList,format(new Date(),'dd-MM-yyyy'))],['Ativos',()=>exportCSV(activeList,'ativos')],['Todos',()=>exportCSV(bookings,'completo')]].map(([l,fn]) => (
+                      <button key={l} onClick={fn} style={{ padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, background: T.card, border: `1px solid ${T.cardBorder}`, color: T.textSub }}>{l}</button>
                     ))}
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* ── RELATÓRIO ── */}
-          {auth && tab === 'relatorio' && (
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflowY: 'auto' }}>
-              {/* Revenue */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: th.mono ? 16 : '16px 20px', borderBottom: th.sectionBorder }}>
-                <HCard th={th} glow style={{ padding: 16 }}>
-                  <p style={{ ...th.monoSm, color: th.mono ? 'rgba(255,106,0,0.5)' : '#9ca3af', marginBottom: 8 }}>{th.mono ? 'RECEITA TOTAL' : 'Receita Total'}</p>
-                  <p style={{ fontFamily: th.mono ? 'monospace' : 'inherit', fontSize: 22, fontWeight: 900, color: '#FF6A00' }}>R$ {totalRevenue.toFixed(2).replace('.', ',')}</p>
-                  <p style={{ ...th.monoSm, marginTop: 6 }}>{activeList.length} {th.mono ? 'agendamentos ativos' : 'ativos'}</p>
-                </HCard>
-                <HCard th={th} style={{ padding: 16 }}>
-                  <p style={{ ...th.monoSm, marginBottom: 8 }}>{th.mono ? 'RECEITA HOJE' : 'Receita Hoje'}</p>
-                  <p style={{ fontFamily: th.mono ? 'monospace' : 'inherit', fontSize: 22, fontWeight: 900, color: th.text }}>R$ {todayRevenue.toFixed(2).replace('.', ',')}</p>
-                  <p style={{ ...th.monoSm, marginTop: 6 }}>{todayList.filter(b=>b.status!=='cancelled').length} hoje</p>
-                </HCard>
               </div>
+            )}
 
-              {/* Service breakdown */}
-              <div style={{ padding: th.mono ? 16 : '16px 20px', borderBottom: th.sectionBorder }}>
-                <p style={{ ...th.monoSm, marginBottom: 12 }}>{th.mono ? '// SERVIÇOS MAIS AGENDADOS' : 'Serviços mais agendados'}</p>
-                {Object.keys(serviceBreakdown).length === 0
-                  ? <p style={th.monoSm}>{th.mono ? '// SEM DADOS' : 'Sem dados'}</p>
-                  : Object.entries(serviceBreakdown).sort((a,b)=>b[1]-a[1]).map(([name,count]) => {
-                    const pct = activeList.length > 0 ? Math.round((count/activeList.length)*100) : 0
-                    return (
-                      <div key={name} style={{ marginBottom: 10 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                          <span style={{ fontFamily: th.mono ? 'monospace' : 'inherit', fontSize: 11, color: th.text, fontWeight: th.mono ? 400 : 600 }}>{name}</span>
-                          <span style={{ fontFamily: th.mono ? 'monospace' : 'inherit', fontSize: 11, fontWeight: 900, color: '#FF6A00' }}>{count}x · {pct}%</span>
-                        </div>
-                        <div style={{ height: th.mono ? 3 : 5, background: th.mono ? 'rgba(255,255,255,0.05)' : '#f3f4f6', borderRadius: 4 }}>
-                          <div style={{ height: th.mono ? 3 : 5, width: `${pct}%`, background: 'linear-gradient(90deg,#FF6A00,#FF8C00)', boxShadow: th.mono ? '0 0 6px rgba(255,106,0,0.5)' : 'none', borderRadius: 4, transition: 'width 0.6s' }} />
-                        </div>
+            {/* ── BLOQUEIOS ── */}
+            {tab === 'bloqueios' && (
+              <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+                {/* Novo bloqueio */}
+                <div style={card({ padding: 16 })}>
+                  <p style={sectionTitle}>Bloquear data ou horário</p>
+
+                  <div style={{ marginBottom: 12 }}>
+                    <p style={{ fontSize: 12, color: T.textSub, fontWeight: 600, marginBottom: 6 }}>Data</p>
+                    <input type="date" value={blockDate} onChange={e => setBlockDate(e.target.value)}
+                      style={{ background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '9px 12px', outline: 'none', fontSize: 13, color: T.text, width: '100%', boxSizing: 'border-box' }} />
+                  </div>
+
+                  {/* Toggle dia inteiro / horários */}
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                    <button onClick={() => setBlockAllDay(true)} style={pill(blockAllDay)}>Dia inteiro</button>
+                    <button onClick={() => setBlockAllDay(false)} style={pill(!blockAllDay)}>Horários específicos</button>
+                  </div>
+
+                  {/* Seleção de horários */}
+                  {!blockAllDay && (
+                    <div style={{ marginBottom: 14 }}>
+                      <p style={{ fontSize: 12, color: T.textSub, fontWeight: 600, marginBottom: 8 }}>Selecione os horários a bloquear</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 6 }}>
+                        {TIME_SLOTS.map(t => {
+                          const sel = blockTimes.includes(t)
+                          return (
+                            <button key={t} onClick={() => toggleBlockTime(t)} style={{ padding: '7px 0', fontSize: 12, fontWeight: 600, cursor: 'pointer', borderRadius: 8, background: sel ? T.redBg : T.inputBg, border: `1.5px solid ${sel ? T.redBorder : T.inputBorder}`, color: sel ? T.red : T.textSub, transition: 'all 0.1s' }}>{t}</button>
+                          )
+                        })}
                       </div>
-                    )
-                  })}
-              </div>
-
-              {/* Export */}
-              <div style={{ padding: th.mono ? 16 : '16px 20px', borderBottom: th.sectionBorder }}>
-                <p style={{ ...th.monoSm, marginBottom: 12 }}>{th.mono ? '// EXPORTAR RELATÓRIO CSV' : 'Exportar relatório'}</p>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 10 }}>
-                  {[['DE', dateFrom, setDateFrom], ['ATÉ', dateTo, setDateTo]].map(([lbl, val, setter]) => (
-                    <div key={lbl} style={{ flex: 1, minWidth: 120 }}>
-                      <p style={{ ...th.monoSm, marginBottom: 4 }}>{lbl}</p>
-                      <input type="date" value={val} onChange={e => setter(e.target.value)} style={{
-                        width: '100%', background: th.inputBg, border: th.inputBorder,
-                        borderRadius: th.mono ? 3 : 8, padding: '7px 10px', outline: 'none',
-                        fontFamily: th.mono ? 'monospace' : 'inherit', fontSize: th.mono ? 11 : 13,
-                        color: th.mono ? '#FF6A00' : '#111', boxSizing: 'border-box',
-                      }} />
                     </div>
-                  ))}
-                  <button onClick={() => exportCSV(rangeFiltered.length > 0 ? rangeFiltered : bookings, dateFrom && dateTo ? `${dateFrom}_${dateTo}` : 'todos')}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'linear-gradient(135deg,#FF6A00,#FF8C00)', color: th.mono ? '#000' : 'white', border: 'none', borderRadius: th.mono ? 3 : 8, cursor: 'pointer', fontFamily: th.mono ? 'monospace' : 'inherit', fontSize: th.mono ? 10 : 13, fontWeight: 900, letterSpacing: th.mono ? '0.2em' : 'normal', flexShrink: 0 }}>
-                    <Download size={12} />{th.mono ? 'BAIXAR' : 'Baixar CSV'}
+                  )}
+
+                  <button onClick={handleBlock} style={{ width: '100%', padding: '11px 0', fontSize: 14, fontWeight: 700, background: T.redBg, border: `1px solid ${T.redBorder}`, color: T.red, borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <Lock size={14} /> {blockAllDay ? 'Bloquear dia inteiro' : `Bloquear ${blockTimes.length} horário(s)`}
                   </button>
                 </div>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {[['Hoje', () => exportCSV(todayList, format(new Date(),'dd-MM-yyyy'))],
-                    ['Ativos', () => exportCSV(activeList,'ativos')],
-                    ['Completo', () => exportCSV(bookings,'completo')]].map(([l, fn]) => (
-                    <button key={l} onClick={fn} style={th.pill(false)}>{l}</button>
-                  ))}
+
+                {/* Lista de bloqueios ativos */}
+                <div style={card({ padding: 16 })}>
+                  <p style={sectionTitle}>Bloqueios ativos ({blocked.length})</p>
+                  {blocked.length === 0
+                    ? <p style={{ fontSize: 13, color: T.textMuted, margin: 0 }}>Nenhum bloqueio ativo</p>
+                    : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {[...blocked].sort((a,b) => (a.date_str||'').localeCompare(b.date_str||'')).map(bl => {
+                          let label = ''
+                          try { label = format(parseISO(bl.date_str), "dd 'de' MMM", { locale: ptBR }) } catch {}
+                          return (
+                            <div key={bl.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 10 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{ width: 32, height: 32, borderRadius: 8, background: T.redBg, border: `1px solid ${T.redBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Lock size={13} color={T.red} />
+                                </div>
+                                <div>
+                                  <p style={{ fontSize: 13, fontWeight: 700, color: T.text, margin: 0 }}>{label}</p>
+                                  <p style={{ fontSize: 11, color: T.textSub, margin: 0 }}>{bl.time ? `Horário: ${bl.time}` : 'Dia inteiro bloqueado'}</p>
+                                </div>
+                              </div>
+                              <button onClick={() => handleUnblock(bl.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', background: 'transparent', border: `1px solid ${T.cardBorder}`, borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, color: T.textSub }}>
+                                <Unlock size={12} /> Desbloquear
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                 </div>
               </div>
-
-              {/* Range list */}
-              {dateFrom && dateTo && (
-                <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <p style={{ ...th.monoSm, padding: '0 4px' }}>{th.mono ? `// ${rangeFiltered.length} REGISTROS NO PERÍODO` : `${rangeFiltered.length} registros no período`}</p>
-                  {rangeFiltered.length === 0
-                    ? <p style={{ ...th.monoSm, textAlign: 'center', padding: '20px 0' }}>{th.mono ? '// SEM DADOS' : 'Sem dados'}</p>
-                    : [...rangeFiltered].sort((a,b)=>(a.dateStr||'').localeCompare(b.dateStr||'')).map(b => (
-                      <BItem key={b.id} b={b} th={th} readOnly onConfirm={async()=>{}} onCancel={async()=>{}} onReschedule={async()=>{}} reMode={false} onToggleRe={()=>{}} />
-                    ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   )
 }
 
-function BItem({ b, onConfirm, onCancel, onReschedule, reMode, onToggleRe, readOnly, th }) {
+function BookingCard({ b, T, onConfirm, onCancel, onReschedule, reMode, onToggleRe }) {
   const cancelled = b.status === 'cancelled'
   let dateLabel = ''
-  try { const d = parseISO(b.dateStr); dateLabel = isToday(d) ? (th.mono ? 'HOJE' : 'Hoje') : format(d, th.mono ? 'dd/MM' : "dd 'de' MMM", { locale: ptBR }) } catch {}
+  try { const d = parseISO(b.dateStr); dateLabel = isToday(d) ? 'Hoje' : format(d, "dd 'de' MMM", { locale: ptBR }) } catch {}
 
   return (
-    <HCard th={th} glow={!cancelled} style={{ padding: 12, opacity: cancelled ? 0.4 : 1 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          <div style={{ width: 32, height: 32, background: th.mono ? 'rgba(255,106,0,0.08)' : '#fff7f0', border: th.mono ? '1px solid rgba(255,106,0,0.2)' : '1px solid #ffd4b0', borderRadius: th.mono ? 4 : 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <User size={13} color="#FF6A00" />
+    <div style={{ background: T.card, border: `1px solid ${cancelled ? T.cardBorder : T.accentBorder}`, borderRadius: 12, padding: 14, opacity: cancelled ? 0.5 : 1 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 38, height: 38, borderRadius: 10, background: T.accentBg, border: `1px solid ${T.accentBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <User size={15} color={T.accent} />
           </div>
-          <div style={{ minWidth: 0 }}>
-            <p style={{ fontFamily: th.mono ? 'monospace' : 'inherit', fontSize: th.mono ? 13 : 14, fontWeight: 700, color: th.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{b.clientName}</p>
-            <p style={{ fontFamily: th.mono ? 'monospace' : 'inherit', fontSize: 10, color: th.textMuted, margin: 0 }}>{b.clientPhone}</p>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0 }}>{b.clientName}</p>
+            <p style={{ fontSize: 12, color: T.textSub, margin: 0 }}>{b.clientPhone}</p>
           </div>
         </div>
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontFamily: th.mono ? 'monospace' : 'inherit', fontSize: th.mono ? 13 : 14, fontWeight: 900, color: '#FF6A00', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Clock size={11} />{b.time}
-          </div>
-          <div style={{ fontFamily: th.mono ? 'monospace' : 'inherit', fontSize: 10, color: th.textMuted }}>{dateLabel}</div>
+        <div style={{ textAlign: 'right' }}>
+          <p style={{ fontSize: 15, fontWeight: 800, color: T.accent, margin: 0 }}>{b.time}</p>
+          <p style={{ fontSize: 11, color: T.textMuted, margin: 0 }}>{dateLabel}</p>
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 8, borderTop: th.mono ? '1px solid rgba(255,255,255,0.05)' : '1px solid #f3f4f6', marginBottom: !cancelled && !readOnly ? 8 : 0 }}>
-        <Scissors size={10} color="#FF6A00" />
-        <span style={{ fontFamily: th.mono ? 'monospace' : 'inherit', fontSize: 11, color: th.text, fontWeight: th.mono ? 400 : 500 }}>{b.service?.name}</span>
-        <span style={{ fontFamily: th.mono ? 'monospace' : 'inherit', fontSize: 11, fontWeight: 900, color: '#FF6A00', marginLeft: 'auto' }}>{b.service?.priceDisplay}</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: T.inputBg, borderRadius: 8, padding: '8px 12px', marginBottom: cancelled ? 0 : 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Scissors size={12} color={T.textMuted} />
+          <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{b.service?.name}</span>
+        </div>
+        <span style={{ fontSize: 13, fontWeight: 800, color: T.text }}>{b.service?.priceDisplay}</span>
       </div>
 
-      {!cancelled && !readOnly && (
+      {!cancelled && (
         <div style={{ display: 'flex', gap: 6 }}>
           {[
-            { l: th.mono ? 'OK' : 'Confirmar',  fn: onConfirm,   color: th.green, bg: th.mono ? 'rgba(74,222,128,0.07)' : '#f0fdf4',       bdr: th.mono ? 'rgba(74,222,128,0.2)'  : '#bbf7d0', Icon: Check },
-            { l: th.mono ? 'REAGENDAR' : 'Reagendar', fn: onToggleRe, color: '#FF6A00', bg: th.mono ? 'rgba(255,106,0,0.07)' : '#fff7f0', bdr: th.mono ? 'rgba(255,106,0,0.2)'   : '#ffd4b0', Icon: RefreshCw },
-            { l: th.mono ? 'CANCELAR'  : 'Cancelar',  fn: onCancel,   color: th.red,   bg: th.mono ? 'rgba(239,68,68,0.07)'  : '#fff0f0',  bdr: th.mono ? 'rgba(239,68,68,0.2)'   : '#fecaca', Icon: XCircle },
-          ].map(({ l, fn, color, bg, bdr, Icon }) => (
-            <button key={l} onClick={fn} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '6px 0', background: bg, border: `1px solid ${bdr}`, color, borderRadius: th.mono ? 3 : 8, fontFamily: th.mono ? 'monospace' : 'inherit', fontSize: th.mono ? 9 : 12, fontWeight: 700, letterSpacing: th.mono ? '0.1em' : 'normal', textTransform: th.mono ? 'uppercase' : 'none', cursor: 'pointer' }}>
-              <Icon size={10} />{l}
+            { l: 'Confirmar', fn: onConfirm,   color: T.green,  bg: T.greenBg,  border: T.greenBorder,  Icon: Check },
+            { l: 'Reagendar', fn: onToggleRe,  color: T.amber,  bg: T.amberBg,  border: T.amberBorder,  Icon: RefreshCw },
+            { l: 'Cancelar',  fn: onCancel,    color: T.red,    bg: T.redBg,    border: T.redBorder,    Icon: XCircle },
+          ].map(({ l, fn, color, bg, border, Icon }) => (
+            <button key={l} onClick={fn} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '7px 0', background: bg, border: `1px solid ${border}`, color, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+              <Icon size={12} />{l}
             </button>
           ))}
         </div>
       )}
 
-      {reMode && !readOnly && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 4, paddingTop: 8, borderTop: th.mono ? '1px solid rgba(255,255,255,0.05)' : '1px solid #f3f4f6', marginTop: 8 }}>
+      {reMode && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 5, paddingTop: 10, marginTop: 10, borderTop: `1px solid ${T.divider}` }}>
           {TIME_SLOTS.map(t => (
-            <button key={t} onClick={() => onReschedule(t)} style={{
-              padding: '5px 0', fontFamily: th.mono ? 'monospace' : 'inherit', fontSize: 10, fontWeight: 700, cursor: 'pointer', borderRadius: th.mono ? 3 : 8,
-              background: t === b.time ? (th.mono ? 'rgba(255,106,0,0.18)' : '#fff7f0') : (th.mono ? 'rgba(255,255,255,0.03)' : '#f9fafb'),
-              border: t === b.time ? (th.mono ? '1px solid rgba(255,106,0,0.5)' : '1.5px solid #FF6A00') : (th.mono ? '1px solid rgba(255,255,255,0.07)' : '1px solid #e5e7eb'),
-              color: t === b.time ? '#FF6A00' : th.textSub,
-            }}>{t}</button>
+            <button key={t} onClick={() => onReschedule(t)} style={{ padding: '6px 0', fontSize: 11, fontWeight: 700, cursor: 'pointer', borderRadius: 8, background: t===b.time ? T.accentBg : T.inputBg, border: `1.5px solid ${t===b.time ? T.accent : T.inputBorder}`, color: t===b.time ? T.accent : T.textSub }}>{t}</button>
           ))}
         </div>
       )}
-    </HCard>
+    </div>
   )
 }

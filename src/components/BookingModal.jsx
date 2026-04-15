@@ -30,6 +30,7 @@ import {
   requestNotificationPermission,
   saveBooking,
   isSlotBooked,
+  isDayFullyBlocked,
 } from '../utils/calendar'
 import toast from 'react-hot-toast'
 
@@ -95,6 +96,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
     if (!date) return false
     if (isBefore(startOfDay(date), today)) return false
     if (date.getDay() === 0) return false
+    if (isDayFullyBlocked(date)) return false
     return true
   }
 
