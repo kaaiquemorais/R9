@@ -26,7 +26,7 @@ export const SERVICES = [
     priceDisplay: 'R$ 105,00',
     duration: 75,
     durationDisplay: '75 min',
-    iconName: 'Zap',
+    iconName: 'Scissors',
     description: 'Combo completo: corte + barba',
     highlight: true,
   },
