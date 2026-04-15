@@ -29,21 +29,7 @@ export default function Header({ onBookNow, onOpenAdmin }) {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <a href="#" className="flex items-center gap-3 group">
-            <img
-              src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png"
-              alt="R9 Barbearia"
-              className="h-10 w-auto object-contain transition-all duration-300 group-hover:drop-shadow-[0_0_12px_rgba(255,106,0,0.7)]"
-              onError={(e) => {
-                e.target.style.display = 'none'
-                e.target.nextSibling.style.display = 'flex'
-              }}
-            />
-            <span
-              className="hidden text-2xl font-black glow-text"
-              style={{ display: 'none' }}
-            >
-              R9
-            </span>
+            <span className="text-2xl font-black glow-text">R9</span>
           </a>
 
           {/* Desktop Nav */}
