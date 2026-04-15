@@ -2,7 +2,7 @@ import { Scissors } from 'lucide-react'
 
 export default function Hero({ onBookNow }) {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+    <section className="relative flex items-center justify-center overflow-hidden pt-20 pb-12 sm:py-24 sm:pt-28">
       {/* Background Glow */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/8 blur-[120px]" />
@@ -22,11 +22,11 @@ export default function Hero({ onBookNow }) {
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         {/* Logo */}
-        <div className="flex justify-center mb-8 animate-fade-in">
+        <div className="flex justify-center mb-6 animate-fade-in">
           <img
             src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png"
             alt="R9 Barbearia"
-            className="h-52 sm:h-64 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.35)]"
+            className="h-36 sm:h-56 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.35)]"
           />
         </div>
 
@@ -40,7 +40,7 @@ export default function Hero({ onBookNow }) {
         </h1>
 
         {/* Subheadline */}
-        <p className="text-text-muted text-lg sm:text-xl md:text-2xl font-light mb-12 max-w-xl mx-auto animate-slide-up">
+        <p className="text-text-muted text-lg sm:text-xl md:text-2xl font-light mb-8 max-w-xl mx-auto animate-slide-up">
           Rápido, simples e sem espera
         </p>
 
