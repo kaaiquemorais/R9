@@ -47,7 +47,7 @@ export default function Hero({ onBookNow }) {
             {/* Headline */}
             <h1
               className="text-5xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-6 animate-slide-up"
-              style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              style={{ fontFamily: "'Bodoni Moda', serif" }}
             >
               <span style={{ whiteSpace: 'nowrap' }}>Agende seu horário</span>
               <br />
@@ -59,7 +59,7 @@ export default function Hero({ onBookNow }) {
             {/* Subheadline */}
             <p
               className="text-text-muted text-lg sm:text-lg md:text-xl mb-8 max-w-xl animate-slide-up"
-              style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: 'italic', fontWeight: 400 }}
+              style={{ fontFamily: "'Bodoni Moda', serif", fontStyle: 'italic', fontWeight: 400 }}
             >
               Rápido, simples e sem espera
             </p>
