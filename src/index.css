@@ -41,13 +41,13 @@
 @layer components {
   .btn-primary {
     @apply bg-gradient-to-r from-primary to-primary-light text-white font-semibold px-8 py-4 rounded-2xl
-    transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,106,0,0.5)] hover:scale-[1.03]
+    transition-all duration-300 hover:scale-[1.03]
     active:scale-[0.98] cursor-pointer select-none;
   }
 
   .btn-outline {
     @apply border border-primary/40 text-primary font-semibold px-6 py-3 rounded-xl
-    transition-all duration-300 hover:border-primary hover:bg-primary/10 hover:shadow-[0_0_20px_rgba(255,106,0,0.2)]
+    transition-all duration-300 hover:border-primary hover:bg-primary/10
     active:scale-[0.98] cursor-pointer select-none;
   }
 

@@ -48,7 +48,7 @@ export default function Hero({ onBookNow }) {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up">
           <button
             onClick={onBookNow}
-            className="btn-primary animate-pulse-glow flex items-center gap-3 text-base"
+            className="btn-primary flex items-center gap-3 text-base"
           >
             AGENDAR AGORA
           </button>

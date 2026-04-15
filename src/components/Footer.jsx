@@ -35,7 +35,7 @@ export default function Footer({ onBookNow, onOpenAdmin }) {
             </p>
             <button
               onClick={onBookNow}
-              className="btn-primary animate-pulse-glow mx-auto"
+              className="btn-primary mx-auto"
             >
               AGENDAR AGORA
             </button>
