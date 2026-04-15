@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Check, XCircle, RefreshCw, Calendar, User, Clock, Scissors, ChevronDown, BarChart2, Zap } from 'lucide-react'
+import { X, Check, XCircle, RefreshCw, Calendar, User, Clock, Scissors, ChevronDown, BarChart2 } from 'lucide-react'
 import { format, isToday, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { getBookedSlots, cancelBooking, updateBookingStatus } from '../utils/calendar'
@@ -95,17 +95,7 @@ export default function AdminDashboard({ isOpen, onClose }) {
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent" />
 
         {/* Header */}
-        <div className="relative flex items-center justify-between px-6 py-4 border-b flex-shrink-0" style={{ borderColor: 'rgba(255,106,0,0.12)' }}>
-          <div className="flex items-center gap-3">
-            <div className="relative w-8 h-8 flex items-center justify-center">
-              <div className="absolute inset-0 rounded-lg bg-primary/20" style={{ boxShadow: '0 0 12px rgba(255,106,0,0.3)' }} />
-              <Zap size={14} className="text-primary relative z-10" />
-            </div>
-            <div>
-              <p className="font-black text-sm tracking-widest uppercase text-white">R9 Barbearia</p>
-              <p className="text-[10px] tracking-widest uppercase" style={{ color: 'rgba(255,106,0,0.6)' }}>Sistema de Gestão</p>
-            </div>
-          </div>
+        <div className="relative flex items-center justify-end px-6 py-4 flex-shrink-0">
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
@@ -123,11 +113,7 @@ export default function AdminDashboard({ isOpen, onClose }) {
             {/* Glow center */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,106,0,0.04) 0%, transparent 70%)' }} />
 
-            <div className="relative">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,106,0,0.08)', border: '1px solid rgba(255,106,0,0.2)', boxShadow: '0 0 30px rgba(255,106,0,0.1)' }}>
-                <img src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png" alt="R9" className="w-10 h-10 object-contain" />
-              </div>
-            </div>
+            <img src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png" alt="R9" className="h-20 w-auto object-contain" />
 
             <div className="w-full max-w-xs space-y-3">
               <input
