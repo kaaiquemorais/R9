@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react'
 import { Toaster } from 'react-hot-toast'
-import Header from './components/Header'
 import Hero from './components/Hero'
 import Services from './components/Services'
 import BookingModal from './components/BookingModal'
@@ -44,8 +43,6 @@ export default function App() {
           },
         }}
       />
-
-      <Header onBookNow={() => openBooking()} />
 
       <main>
         <Hero onBookNow={() => openBooking()} />
