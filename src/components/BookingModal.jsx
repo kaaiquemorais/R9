@@ -186,27 +186,6 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
 
   return (
     <ModalWrapper onClose={onClose}>
-      {/* Step Progress */}
-      <div className="flex items-center justify-between mb-8 px-2">
-        {STEPS.map((s, i) => (
-          <div key={s.id} className="flex items-center gap-2">
-            <button
-              onClick={() => step > s.id && setStep(s.id)}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-300
-                ${step === s.id ? 'step-active' : step > s.id ? 'step-done cursor-pointer' : 'step-inactive'}`}
-            >
-              {step > s.id ? <Check size={14} strokeWidth={3} /> : s.id}
-            </button>
-            <span className={`text-xs font-medium hidden sm:block ${step === s.id ? 'text-text' : 'text-text-muted'}`}>
-              {s.label}
-            </span>
-            {i < STEPS.length - 1 && (
-              <div className={`flex-1 h-px mx-2 w-8 sm:w-12 transition-all duration-500 ${step > s.id ? 'bg-primary/50' : 'bg-white/10'}`} />
-            )}
-          </div>
-        ))}
-      </div>
-
       {/* Step Content */}
       <div className="min-h-[320px]">
         {step === 1 && (
@@ -306,11 +285,12 @@ function ModalWrapper({ onClose, children }) {
       {/* Modal */}
       <div className="relative w-full sm:max-w-lg bg-surface border border-white/8 sm:rounded-3xl rounded-t-3xl shadow-[0_0_80px_rgba(0,0,0,0.8)] animate-slide-up max-h-[95vh] overflow-y-auto no-scrollbar">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 pb-0">
-          <div>
-            <h2 className="text-xl font-black">Agendar Horário</h2>
-            <p className="text-text-muted text-xs mt-0.5">R9 Barbearia</p>
-          </div>
+        <div className="flex items-center justify-between px-6 pt-5 pb-0">
+          <img
+            src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png"
+            alt="R9 Barbearia"
+            className="h-10 w-auto object-contain"
+          />
           <button
             onClick={onClose}
             className="w-9 h-9 rounded-xl bg-surface-2 hover:bg-surface-3 flex items-center justify-center text-text-muted hover:text-text transition-all duration-200"
