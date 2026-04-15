@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react'
-import { X, ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Bell, ExternalLink } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Bell, ExternalLink, Scissors, Wind, Zap, Sparkles, Eye } from 'lucide-react'
+
+const SERVICE_ICONS = { Scissors, Wind, Zap, Sparkles, Eye }
+function ServiceIcon({ name, size = 18, className }) {
+  const Icon = SERVICE_ICONS[name] || Scissors
+  return <Icon size={size} className={className} />
+}
 import { format, addDays, startOfDay, isBefore } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { SERVICES, TIME_SLOTS, REMINDER_OPTIONS } from '../data/services'
@@ -134,7 +140,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
           <div>
             <h3 className="text-2xl font-black mb-2">Agendamento Confirmado!</h3>
             <p className="text-text-muted text-sm">
-              Até logo, <span className="text-text font-semibold">{clientName}</span> 👋
+              Até logo, <span className="text-text font-semibold">{clientName}</span>
             </p>
           </div>
 
@@ -320,10 +326,10 @@ function StepService({ services, selected, onSelect }) {
                 : 'border-white/8 bg-surface-2 hover:border-white/20 hover:bg-surface-3'
               }`}
           >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0
               ${selected?.id === s.id ? 'bg-primary/20' : 'bg-surface-3'}`}
             >
-              {s.icon}
+              <ServiceIcon name={s.iconName} size={18} className={selected?.id === s.id ? 'text-primary' : 'text-text-muted'} />
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-sm">{s.name}</div>

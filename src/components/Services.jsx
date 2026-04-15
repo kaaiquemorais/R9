@@ -1,4 +1,10 @@
-import { Clock, DollarSign, Zap, ArrowRight } from 'lucide-react'
+import { Clock, DollarSign, Zap, ArrowRight, Scissors, Wind, Sparkles, Eye } from 'lucide-react'
+
+const SERVICE_ICONS = { Scissors, Wind, Zap, Sparkles, Eye }
+function ServiceIcon({ name, size = 18, className }) {
+  const Icon = SERVICE_ICONS[name] || Scissors
+  return <Icon size={size} className={className} />
+}
 import { SERVICES } from '../data/services'
 
 export default function Services({ onBookService }) {

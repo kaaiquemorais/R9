@@ -6,7 +6,7 @@ export const SERVICES = [
     priceDisplay: 'R$ 55,00',
     duration: 45,
     durationDisplay: '45 min',
-    icon: '✂️',
+    iconName: 'Scissors',
     description: 'Aparagem e modelagem completa da barba',
   },
   {
@@ -16,7 +16,7 @@ export const SERVICES = [
     priceDisplay: 'R$ 58,00',
     duration: 45,
     durationDisplay: '45 min',
-    icon: '💈',
+    iconName: 'Wind',
     description: 'Corte moderno e estilizado',
   },
   {
@@ -26,7 +26,7 @@ export const SERVICES = [
     priceDisplay: 'R$ 105,00',
     duration: 75,
     durationDisplay: '75 min',
-    icon: '⚡',
+    iconName: 'Zap',
     description: 'Combo completo: corte + barba',
     highlight: true,
   },
@@ -37,7 +37,7 @@ export const SERVICES = [
     priceDisplay: 'R$ Consultar',
     duration: 15,
     durationDisplay: '15 min',
-    icon: '✨',
+    iconName: 'Sparkles',
     description: 'Acabamento e definição das entradas',
   },
   {
@@ -47,7 +47,7 @@ export const SERVICES = [
     priceDisplay: 'R$ 15,00',
     duration: 15,
     durationDisplay: '15 min',
-    icon: '👁',
+    iconName: 'Eye',
     description: 'Design e alinhamento das sobrancelhas',
   },
 ]
