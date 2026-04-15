@@ -1,6 +1,22 @@
-import { Heart, Instagram, Phone } from 'lucide-react'
+import { useRef } from 'react'
+import { Instagram, Phone } from 'lucide-react'
 
-export default function Footer({ onBookNow }) {
+export default function Footer({ onBookNow, onOpenAdmin }) {
+  const holdTimer = useRef(null)
+
+  const startHold = () => {
+    holdTimer.current = setTimeout(() => {
+      onOpenAdmin()
+    }, 5000)
+  }
+
+  const cancelHold = () => {
+    if (holdTimer.current) {
+      clearTimeout(holdTimer.current)
+      holdTimer.current = null
+    }
+  }
+
   return (
     <footer className="relative border-t border-white/5 overflow-hidden">
       {/* Top Glow */}
@@ -41,7 +57,18 @@ export default function Footer({ onBookNow }) {
             />
             <span className="text-3xl font-black glow-text hidden">R9</span>
             <p className="text-text-muted text-sm leading-relaxed max-w-xs">
-              Barbearia premium em Bragança Paulista. Estilo, qualidade e excelência em cada corte.
+              Barbearia premium em Bragança Paulista. Estilo, qualidade e excelência em cada{' '}
+              <span
+                className="select-none cursor-default"
+                onMouseDown={startHold}
+                onMouseUp={cancelHold}
+                onMouseLeave={cancelHold}
+                onTouchStart={startHold}
+                onTouchEnd={cancelHold}
+              >
+                corte
+              </span>
+              .
             </p>
           </div>
 

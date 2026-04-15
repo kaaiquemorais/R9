@@ -6,7 +6,7 @@ import { getBookedSlots, cancelBooking, updateBookingStatus } from '../utils/cal
 import { TIME_SLOTS } from '../data/services'
 import toast from 'react-hot-toast'
 
-const ADMIN_PASSWORD = 'r9admin'
+const ADMIN_PASSWORD = 'fut09spa'
 
 export default function AdminDashboard({ isOpen, onClose }) {
   const [authenticated, setAuthenticated] = useState(false)

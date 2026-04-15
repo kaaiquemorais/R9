@@ -45,10 +45,7 @@ export default function App() {
         }}
       />
 
-      <Header
-        onBookNow={() => openBooking()}
-        onOpenAdmin={() => setAdminOpen(true)}
-      />
+      <Header onBookNow={() => openBooking()} />
 
       <main>
         <Hero onBookNow={() => openBooking()} />
@@ -56,7 +53,7 @@ export default function App() {
         <BusinessInfo />
       </main>
 
-      <Footer onBookNow={() => openBooking()} />
+      <Footer onBookNow={() => openBooking()} onOpenAdmin={() => setAdminOpen(true)} />
 
       <BookingModal
         isOpen={bookingOpen}
