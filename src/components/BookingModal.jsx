@@ -1,8 +1,22 @@
 import { useState, useEffect } from 'react'
 import { X, ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Bell, ExternalLink, Scissors, Wind, Zap, Sparkles, Eye } from 'lucide-react'
 
-const SERVICE_ICONS = { Scissors, Wind, Zap, Sparkles, Eye }
+function BeardIcon({ size = 18, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M12 3a4 4 0 0 1 4 4v1c0 1-.4 2-1 2.7" />
+      <path d="M8 10.7C7.4 10 7 9 7 8V7a4 4 0 0 1 4-4" />
+      <path d="M6 13c0 3.5 2 6 6 6s6-2.5 6-6" />
+      <path d="M6 13c1 1 2.5 1.5 4 1" />
+      <path d="M18 13c-1 1-2.5 1.5-4 1" />
+      <path d="M10 14c0 1.5.5 3 2 3s2-1.5 2-3" />
+    </svg>
+  )
+}
+
+const SERVICE_ICONS = { Scissors, BeardIcon }
 function ServiceIcon({ name, size = 18, className }) {
+  if (name === 'BeardIcon') return <BeardIcon size={size} className={className} />
   const Icon = SERVICE_ICONS[name] || Scissors
   return <Icon size={size} className={className} />
 }

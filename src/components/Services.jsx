@@ -1,6 +1,23 @@
 import { Clock, DollarSign, Zap, ArrowRight, Scissors } from 'lucide-react'
-
 import { SERVICES } from '../data/services'
+
+function BeardIcon({ size = 18, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M12 3a4 4 0 0 1 4 4v1c0 1-.4 2-1 2.7" />
+      <path d="M8 10.7C7.4 10 7 9 7 8V7a4 4 0 0 1 4-4" />
+      <path d="M6 13c0 3.5 2 6 6 6s6-2.5 6-6" />
+      <path d="M6 13c1 1 2.5 1.5 4 1" />
+      <path d="M18 13c-1 1-2.5 1.5-4 1" />
+      <path d="M10 14c0 1.5.5 3 2 3s2-1.5 2-3" />
+    </svg>
+  )
+}
+
+function ServiceIcon({ name, size = 18, className }) {
+  if (name === 'BeardIcon') return <BeardIcon size={size} className={className} />
+  return <Scissors size={size} className={className} />
+}
 
 export default function Services({ onBookService }) {
   return (
@@ -63,7 +80,7 @@ function ServiceCard({ service, onBook }) {
 
       {/* Icon */}
       <div className="relative w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-        <Scissors size={22} className="text-primary" />
+        <ServiceIcon name={service.iconName} size={22} className="text-primary" />
       </div>
 
       {/* Content */}
