@@ -40,15 +40,33 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-gradient-to-r from-primary to-primary-light text-white font-semibold px-8 py-4 rounded-2xl
-    transition-all duration-300 hover:scale-[1.03]
-    active:scale-[0.98] cursor-pointer select-none;
+    @apply relative overflow-hidden bg-black/70 border border-primary text-primary font-bold px-8 py-4
+    tracking-widest uppercase text-sm transition-all duration-300
+    hover:text-white hover:bg-primary/20 hover:scale-[1.02]
+    active:scale-[0.97] cursor-pointer select-none;
+    box-shadow: 0 0 12px rgba(255,106,0,0.25), inset 0 0 12px rgba(255,106,0,0.06);
+    clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+  }
+
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,106,0,0.08) 50%, transparent 100%);
+    transform: translateX(-100%);
+    transition: transform 0.5s ease;
+  }
+
+  .btn-primary:hover::before {
+    transform: translateX(100%);
   }
 
   .btn-outline {
-    @apply border border-primary/40 text-primary font-semibold px-6 py-3 rounded-xl
-    transition-all duration-300 hover:border-primary hover:bg-primary/10
-    active:scale-[0.98] cursor-pointer select-none;
+    @apply border border-primary/50 text-primary font-semibold px-6 py-3
+    tracking-wider uppercase text-xs transition-all duration-300
+    hover:border-primary hover:bg-primary/10 hover:text-white
+    active:scale-[0.97] cursor-pointer select-none;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
   }
 
   .card {
