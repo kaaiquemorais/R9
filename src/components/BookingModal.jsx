@@ -320,8 +320,8 @@ function StepService({ services, selected, onSelect }) {
                 : 'border-white/8 bg-surface-2 hover:border-white/20 hover:bg-surface-3'
               }`}
           >
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-primary/10 border border-primary/20">
-              <ServiceIcon name={s.iconName} size={17} className="text-primary" />
+            <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center overflow-hidden flex-shrink-0 shadow-[0_0_10px_rgba(0,0,0,0.5)]">
+              <img src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png" alt="R9" className="w-8 h-8 object-contain" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-sm">{s.name}</div>
