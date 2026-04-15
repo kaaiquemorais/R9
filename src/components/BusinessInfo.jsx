@@ -93,7 +93,7 @@ export default function BusinessInfo() {
         <div className="mt-8 rounded-2xl overflow-hidden border border-white/8 shadow-[0_0_40px_rgba(0,0,0,0.5)]">
           <iframe
             title="Localização R9 Barbearia"
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3669.6!2d-46.5379!3d-23.0026!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjPCsDAwJzA5LjMiUyA0NsKwMzInMTYuNCJX!5e0!3m2!1spt!2sbr!4v1234567890"
+            src="https://maps.google.com/maps?q=Rua+Fernando+de+Noronha,+100,+Residencial+das+Ilhas,+Bragança+Paulista,+SP,+12913-004&output=embed&hl=pt"
             width="100%"
             height="280"
             style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg) saturate(0.8)' }}
