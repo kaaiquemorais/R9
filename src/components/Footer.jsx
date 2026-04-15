@@ -93,12 +93,9 @@ export default function Footer({ onBookNow }) {
         </div>
 
         {/* Bottom */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-white/5">
-          <p className="text-text-muted text-xs">
-            © {new Date().getFullYear()} R9 Barbearia. Todos os direitos reservados.
-          </p>
-          <p className="text-text-muted text-xs flex items-center gap-1.5">
-            Feito com <Heart size={11} className="text-primary fill-primary" /> em Bragança Paulista
+        <div className="flex items-center justify-center pt-8 border-t border-white/5">
+          <p className="text-text-muted text-xs text-center">
+            © R9 Barbearia. Todos os direitos reservados.
           </p>
         </div>
       </div>

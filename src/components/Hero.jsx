@@ -1,4 +1,4 @@
-import { ArrowRight, Star, Clock, Scissors } from 'lucide-react'
+import { Star, Clock, Scissors } from 'lucide-react'
 
 export default function Hero({ onBookNow }) {
   return (
@@ -50,7 +50,6 @@ export default function Hero({ onBookNow }) {
             className="btn-primary animate-pulse-glow flex items-center gap-3 text-base"
           >
             AGENDAR AGORA
-            <ArrowRight size={18} />
           </button>
           <a
             href="#servicos"
@@ -65,17 +64,13 @@ export default function Hero({ onBookNow }) {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12 animate-fade-in">
           <Stat icon={<Star size={18} className="text-primary" />} value="4.9" label="Avaliação" />
           <div className="hidden sm:block w-px h-8 bg-white/10" />
-          <Stat icon={<Clock size={18} className="text-primary" />} value="< 2min" label="Para agendar" />
+          <Stat icon={<Clock size={18} className="text-primary" />} value="2min" label="Para agendar" />
           <div className="hidden sm:block w-px h-8 bg-white/10" />
           <Stat icon={<Scissors size={18} className="text-primary" />} value="5+" label="Especialidades" />
         </div>
       </div>
 
-      {/* Bottom Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce opacity-40">
-        <div className="w-px h-8 bg-gradient-to-b from-transparent to-primary" />
-        <div className="w-1 h-1 rounded-full bg-primary" />
-      </div>
+
     </section>
   )
 }
