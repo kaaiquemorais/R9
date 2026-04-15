@@ -2,7 +2,7 @@ import { Scissors } from 'lucide-react'
 
 export default function Hero({ onBookNow }) {
   return (
-    <section className="relative flex items-center justify-center overflow-hidden pt-24 pb-20 sm:py-24 sm:pt-28">
+    <section className="relative flex items-center overflow-hidden pt-24 pb-20 sm:py-24 sm:pt-28">
       {/* Background Glow */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/8 blur-[120px]" />
@@ -20,45 +20,63 @@ export default function Hero({ onBookNow }) {
         />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        {/* Logo */}
-        <div className="flex justify-center mb-6 animate-fade-in">
-          <img
-            src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png"
-            alt="R9 Barbearia"
-            className="h-52 sm:h-44 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.35)]"
-          />
-        </div>
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        {/* Mobile: centered layout | Desktop: two-column */}
+        <div className="flex flex-col items-center text-center lg:flex-row lg:items-center lg:text-left lg:gap-0">
 
-        {/* Headline */}
-        <h1 className="text-5xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[0.95] tracking-tight mb-6 animate-slide-up">
-          Agende seu horário
-          <br />
-          <span className="glow-text drop-shadow-[0_0_30px_rgba(255,106,0,0.4)]">
-            em segundos
-          </span>
-        </h1>
+          {/* LEFT: Content */}
+          <div className="flex flex-col items-center lg:items-start lg:flex-1 lg:pr-8">
+            {/* Logo */}
+            <div className="flex justify-center lg:justify-start mb-6 animate-fade-in">
+              <img
+                src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png"
+                alt="R9 Barbearia"
+                className="h-52 sm:h-44 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.35)]"
+              />
+            </div>
 
-        {/* Subheadline */}
-        <p className="text-text-muted text-lg sm:text-lg md:text-xl font-light mb-8 max-w-xl mx-auto animate-slide-up">
-          Rápido, simples e sem espera
-        </p>
+            {/* Headline */}
+            <h1 className="text-5xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[0.95] tracking-tight mb-6 animate-slide-up">
+              Agende seu horário
+              <br />
+              <span className="glow-text drop-shadow-[0_0_30px_rgba(255,106,0,0.4)]">
+                em segundos
+              </span>
+            </h1>
 
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up">
-          <button
-            onClick={onBookNow}
-            className="btn-primary flex items-center gap-3 text-base"
-          >
-            AGENDAR AGORA
-          </button>
-          <a
-            href="#servicos"
-            className="btn-outline flex items-center gap-2 text-base"
-          >
-            <Scissors size={16} />
-            Ver Serviços
-          </a>
+            {/* Subheadline */}
+            <p className="text-text-muted text-lg sm:text-lg md:text-xl font-light mb-8 max-w-xl animate-slide-up">
+              Rápido, simples e sem espera
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-4 animate-slide-up">
+              <button
+                onClick={onBookNow}
+                className="btn-primary flex items-center gap-3 text-base"
+              >
+                AGENDAR AGORA
+              </button>
+              <a
+                href="#servicos"
+                className="btn-outline flex items-center gap-2 text-base"
+              >
+                <Scissors size={16} />
+                Ver Serviços
+              </a>
+            </div>
+          </div>
+
+          {/* RIGHT: Hero Image (desktop only) */}
+          <div className="hidden lg:flex lg:flex-1 items-center justify-center h-full">
+            <img
+              src="https://i.postimg.cc/cJ2GBDDc/hero-R9.png"
+              alt="R9 Barbearia"
+              className="w-full h-full object-contain"
+              style={{ maxHeight: '600px' }}
+            />
+          </div>
+
         </div>
       </div>
     </section>
