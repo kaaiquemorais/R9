@@ -50,6 +50,16 @@ export const SERVICES = [
     iconName: 'Scissors',
     description: 'Design e alinhamento das sobrancelhas',
   },
+  {
+    id: 6,
+    name: 'SPA',
+    price: null,
+    priceDisplay: 'R$ Consultar',
+    duration: 60,
+    durationDisplay: '60 min',
+    iconName: 'Scissors',
+    description: 'Tratamento completo de relaxamento e cuidados',
+  },
 ]
 
 export const TIME_SLOTS = [
