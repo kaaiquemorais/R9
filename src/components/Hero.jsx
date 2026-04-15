@@ -2,13 +2,12 @@ import { Scissors } from 'lucide-react'
 
 export default function Hero({ onBookNow }) {
   return (
-    <section className="relative flex items-center overflow-hidden pt-24 pb-20 sm:py-24 sm:pt-28">
+    <section className="relative overflow-hidden" style={{ minHeight: '100vh' }}>
       {/* Background Glow */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/8 blur-[120px]" />
         <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] rounded-full bg-primary/5 blur-[80px]" />
         <div className="absolute bottom-1/4 right-1/4 w-[200px] h-[200px] rounded-full bg-primary-light/5 blur-[60px]" />
-
         {/* Grid */}
         <div
           className="absolute inset-0 opacity-[0.03]"
@@ -20,12 +19,23 @@ export default function Hero({ onBookNow }) {
         />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        {/* Mobile: centered layout | Desktop: two-column */}
-        <div className="flex flex-col items-center text-center lg:flex-row lg:items-center lg:text-left lg:gap-0">
+      {/* Desktop: Hero image absolutely covering the right half, top to bottom */}
+      <div className="hidden lg:block absolute top-0 right-0 w-1/2 h-full">
+        <img
+          src="https://i.postimg.cc/cJ2GBDDc/hero-R9.png"
+          alt="R9 Barbearia"
+          className="w-full h-full object-contain object-right"
+        />
+        {/* Fade gradient on the left edge of the image so it blends with content */}
+        <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-[#0a0a0a] to-transparent" />
+      </div>
 
-          {/* LEFT: Content */}
-          <div className="flex flex-col items-center lg:items-start lg:flex-1 lg:pr-8">
+      {/* Content */}
+      <div className="relative flex items-center h-full" style={{ minHeight: '100vh' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          {/* Mobile: centered | Desktop: left column only */}
+          <div className="flex flex-col items-center text-center pt-24 pb-20 sm:pt-28 sm:pb-24 lg:items-start lg:text-left lg:w-1/2 lg:pt-0 lg:pb-0">
+
             {/* Logo */}
             <div className="flex justify-center lg:justify-start mb-6 animate-fade-in">
               <img
@@ -66,17 +76,6 @@ export default function Hero({ onBookNow }) {
               </a>
             </div>
           </div>
-
-          {/* RIGHT: Hero Image (desktop only) */}
-          <div className="hidden lg:flex lg:flex-1 items-center justify-center h-full">
-            <img
-              src="https://i.postimg.cc/cJ2GBDDc/hero-R9.png"
-              alt="R9 Barbearia"
-              className="w-full h-full object-contain"
-              style={{ maxHeight: '600px' }}
-            />
-          </div>
-
         </div>
       </div>
     </section>
