@@ -16,7 +16,7 @@ export const SERVICES = [
     priceDisplay: 'R$ 58,00',
     duration: 45,
     durationDisplay: '45 min',
-    iconName: 'Wind',
+    iconName: 'Scissors',
     description: 'Corte moderno e estilizado',
   },
   {
@@ -37,7 +37,7 @@ export const SERVICES = [
     priceDisplay: 'R$ Consultar',
     duration: 15,
     durationDisplay: '15 min',
-    iconName: 'Sparkles',
+    iconName: 'Scissors',
     description: 'Acabamento e definição das entradas',
   },
   {
@@ -47,7 +47,7 @@ export const SERVICES = [
     priceDisplay: 'R$ 15,00',
     duration: 15,
     durationDisplay: '15 min',
-    iconName: 'Eye',
+    iconName: 'Scissors',
     description: 'Design e alinhamento das sobrancelhas',
   },
 ]

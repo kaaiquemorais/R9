@@ -326,10 +326,8 @@ function StepService({ services, selected, onSelect }) {
                 : 'border-white/8 bg-surface-2 hover:border-white/20 hover:bg-surface-3'
               }`}
           >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0
-              ${selected?.id === s.id ? 'bg-primary/20' : 'bg-surface-3'}`}
-            >
-              <ServiceIcon name={s.iconName} size={18} className={selected?.id === s.id ? 'text-primary' : 'text-text-muted'} />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-primary/10 border border-primary/20">
+              <ServiceIcon name={s.iconName} size={17} className="text-primary" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-sm">{s.name}</div>
