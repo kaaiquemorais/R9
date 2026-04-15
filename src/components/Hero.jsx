@@ -22,11 +22,20 @@ export default function Hero({ onBookNow }) {
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-2 mb-8 animate-fade-in">
+        <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-2 mb-6 animate-fade-in">
           <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
           <span className="text-primary text-xs font-semibold tracking-widest uppercase">
             Aberto Hoje
           </span>
+        </div>
+
+        {/* Logo */}
+        <div className="flex justify-center mb-8 animate-fade-in">
+          <img
+            src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png"
+            alt="R9 Barbearia"
+            className="h-28 sm:h-32 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.35)]"
+          />
         </div>
 
         {/* Headline */}
@@ -61,11 +70,11 @@ export default function Hero({ onBookNow }) {
         </div>
 
         {/* Stats */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12 animate-fade-in">
+        <div className="flex flex-row items-center justify-center gap-4 sm:gap-12 animate-fade-in">
           <Stat icon={<Star size={18} className="text-primary" />} value="4.9" label="Avaliação" />
-          <div className="hidden sm:block w-px h-8 bg-white/10" />
+          <div className="w-px h-8 bg-white/10" />
           <Stat icon={<Clock size={18} className="text-primary" />} value="2min" label="Para agendar" />
-          <div className="hidden sm:block w-px h-8 bg-white/10" />
+          <div className="w-px h-8 bg-white/10" />
           <Stat icon={<Scissors size={18} className="text-primary" />} value="5+" label="Especialidades" />
         </div>
       </div>
