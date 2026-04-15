@@ -2,7 +2,7 @@ import { Scissors } from 'lucide-react'
 
 export default function Hero({ onBookNow }) {
   return (
-    <section className="relative flex items-center justify-center overflow-hidden pt-36 pb-20 sm:py-24 sm:pt-28">
+    <section className="relative flex items-center justify-center overflow-hidden pt-24 pb-20 sm:py-24 sm:pt-28">
       {/* Background Glow */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-primary/8 blur-[120px]" />
@@ -26,7 +26,7 @@ export default function Hero({ onBookNow }) {
           <img
             src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png"
             alt="R9 Barbearia"
-            className="h-36 sm:h-44 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.35)]"
+            className="h-52 sm:h-44 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.35)]"
           />
         </div>
 
