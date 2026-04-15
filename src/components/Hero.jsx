@@ -26,7 +26,7 @@ export default function Hero({ onBookNow }) {
           <img
             src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png"
             alt="R9 Barbearia"
-            className="h-40 sm:h-48 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.35)]"
+            className="h-52 sm:h-64 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.35)]"
           />
         </div>
 
