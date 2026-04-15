@@ -502,7 +502,7 @@ function StepConfirm({ service, date, time, reminder, onReminderChange, clientNa
           <Bell size={13} />
           Quando deseja ser lembrado?
         </h4>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {REMINDER_OPTIONS.map((opt) => (
             <button
               key={opt.id}

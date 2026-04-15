@@ -60,9 +60,13 @@ export const TIME_SLOTS = [
 ]
 
 export const REMINDER_OPTIONS = [
-  { id: '1h', label: '1 hora antes', minutes: 60 },
-  { id: '2h', label: '2 horas antes', minutes: 120 },
-  { id: '1d', label: '1 dia antes', minutes: 1440 },
+  { id: '15m', label: '15 min antes', minutes: 15 },
+  { id: '30m', label: '30 min antes', minutes: 30 },
+  { id: '1h',  label: '1 hora antes', minutes: 60 },
+  { id: '2h',  label: '2 horas antes', minutes: 120 },
+  { id: '3h',  label: '3 horas antes', minutes: 180 },
+  { id: '1d',  label: '1 dia antes', minutes: 1440 },
+  { id: '2d',  label: '2 dias antes', minutes: 2880 },
 ]
 
 export const PAYMENT_METHODS = ['Dinheiro', 'Cartão de Crédito', 'Cartão de Débito']
