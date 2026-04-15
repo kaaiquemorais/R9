@@ -6,7 +6,7 @@ export const SERVICES = [
     priceDisplay: 'R$ 55,00',
     duration: 45,
     durationDisplay: '45 min',
-    iconName: 'BeardIcon',
+    iconName: 'Scissors',
     description: 'Aparagem e modelagem completa da barba',
   },
   {
