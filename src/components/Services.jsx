@@ -1,10 +1,5 @@
-import { Clock, DollarSign, Zap, ArrowRight, Scissors, Wind, Sparkles, Eye } from 'lucide-react'
+import { Clock, DollarSign, Zap, ArrowRight, Scissors } from 'lucide-react'
 
-const SERVICE_ICONS = { Scissors, Wind, Zap, Sparkles, Eye }
-function ServiceIcon({ name, size = 18, className }) {
-  const Icon = SERVICE_ICONS[name] || Scissors
-  return <Icon size={size} className={className} />
-}
 import { SERVICES } from '../data/services'
 
 export default function Services({ onBookService }) {
@@ -67,12 +62,8 @@ function ServiceCard({ service, onBook }) {
       </div>
 
       {/* Icon */}
-      <div className="relative w-12 h-12 rounded-full bg-black flex items-center justify-center overflow-hidden shadow-[0_0_12px_rgba(0,0,0,0.6)]">
-        <img
-          src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png"
-          alt="R9"
-          className="w-9 h-9 object-contain"
-        />
+      <div className="relative w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+        <Scissors size={22} className="text-primary" />
       </div>
 
       {/* Content */}
