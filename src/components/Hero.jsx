@@ -49,7 +49,7 @@ export default function Hero({ onBookNow }) {
               className="text-5xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-6 animate-slide-up"
               style={{ fontFamily: "'Playfair Display', serif" }}
             >
-              Agende seu horário
+              <span style={{ whiteSpace: 'nowrap' }}>Agende seu horário</span>
               <br />
               <span className="glow-text drop-shadow-[0_0_30px_rgba(255,106,0,0.4)]" style={{ fontStyle: 'italic' }}>
                 em segundos
