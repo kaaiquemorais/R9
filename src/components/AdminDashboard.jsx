@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { X, Check, XCircle, RefreshCw, Calendar, User, Clock, Scissors, ChevronDown, BarChart2 } from 'lucide-react'
+import { X, Check, XCircle, RefreshCw, Calendar, User, Clock, Scissors, ChevronDown, BarChart2, Zap } from 'lucide-react'
 import { format, isToday, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { getBookedSlots, cancelBooking, updateBookingStatus } from '../utils/calendar'
 import { TIME_SLOTS } from '../data/services'
 import toast from 'react-hot-toast'
 
-const ADMIN_PASSWORD = 'fut09spa'
+const ADMIN_PASSWORD = 'vet997'
 
 export default function AdminDashboard({ isOpen, onClose }) {
   const [authenticated, setAuthenticated] = useState(false)
@@ -22,6 +22,7 @@ export default function AdminDashboard({ isOpen, onClose }) {
       setBookings(getBookedSlots())
     } else {
       setPwError(true)
+      setPassword('')
       setTimeout(() => setPwError(false), 1500)
     }
   }
@@ -66,76 +67,117 @@ export default function AdminDashboard({ isOpen, onClose }) {
     try { return isToday(parseISO(b.dateStr)) } catch { return false }
   }).length
 
-  const bookedToday = filteredBookings.filter(b => filter === 'today').map(b => b.time)
+  const bookedToday = filteredBookings.filter(() => filter === 'today').map(b => b.time)
   const availableToday = TIME_SLOTS.filter(t => !bookedToday.includes(t))
 
   return (
     <div className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center p-0 sm:p-4">
-      <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full sm:max-w-2xl bg-surface border border-white/8 sm:rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.9)] flex flex-col max-h-screen sm:max-h-[90vh]">
+      <div
+        className="relative w-full sm:max-w-2xl flex flex-col max-h-screen sm:max-h-[90vh] sm:rounded-2xl overflow-hidden"
+        style={{
+          background: 'linear-gradient(160deg, #0a0a0a 0%, #111111 100%)',
+          border: '1px solid rgba(255,106,0,0.2)',
+          boxShadow: '0 0 60px rgba(255,106,0,0.08), 0 0 120px rgba(0,0,0,0.9)',
+        }}
+      >
+        {/* Scanline overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.03]"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 3px)',
+            backgroundSize: '100% 3px',
+          }}
+        />
+
+        {/* Top accent line */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent" />
+
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-white/8 flex-shrink-0">
+        <div className="relative flex items-center justify-between px-6 py-4 border-b flex-shrink-0" style={{ borderColor: 'rgba(255,106,0,0.12)' }}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-              <BarChart2 size={18} className="text-primary" />
+            <div className="relative w-8 h-8 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-lg bg-primary/20" style={{ boxShadow: '0 0 12px rgba(255,106,0,0.3)' }} />
+              <Zap size={14} className="text-primary relative z-10" />
             </div>
             <div>
-              <h2 className="font-black text-lg">Painel Admin</h2>
-              <p className="text-text-muted text-xs">R9 Barbearia</p>
+              <p className="font-black text-sm tracking-widest uppercase text-white">R9 Barbearia</p>
+              <p className="text-[10px] tracking-widest uppercase" style={{ color: 'rgba(255,106,0,0.6)' }}>Sistema de Gestão</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-xl bg-surface-2 flex items-center justify-center text-text-muted hover:text-text hover:bg-surface-3 transition-all"
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,106,0,0.4)'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
           >
-            <X size={16} />
+            <X size={14} className="text-text-muted" />
           </button>
         </div>
 
         {!authenticated ? (
-          <div className="p-8 flex flex-col items-center gap-6">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Scissors size={28} className="text-primary" />
+          /* LOGIN */
+          <div className="relative flex flex-col items-center justify-center flex-1 p-10 gap-8">
+            {/* Glow center */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,106,0,0.04) 0%, transparent 70%)' }} />
+
+            <div className="relative">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,106,0,0.08)', border: '1px solid rgba(255,106,0,0.2)', boxShadow: '0 0 30px rgba(255,106,0,0.1)' }}>
+                <img src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png" alt="R9" className="w-10 h-10 object-contain" />
+              </div>
             </div>
-            <div className="text-center">
-              <h3 className="font-bold text-xl mb-1">Acesso Restrito</h3>
-              <p className="text-text-muted text-sm">Digite a senha para continuar</p>
-            </div>
+
             <div className="w-full max-w-xs space-y-3">
               <input
                 type="password"
-                placeholder="Senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                className={`input-field text-center transition-all duration-200 ${pwError ? 'border-red-500/60 shadow-[0_0_0_3px_rgba(239,68,68,0.1)]' : ''}`}
+                className="w-full bg-transparent text-center text-white text-sm tracking-widest outline-none px-4 py-3 rounded-xl transition-all duration-200"
+                style={{
+                  border: pwError ? '1px solid rgba(239,68,68,0.6)' : '1px solid rgba(255,106,0,0.25)',
+                  boxShadow: pwError ? '0 0 0 3px rgba(239,68,68,0.08)' : '0 0 0 1px rgba(255,106,0,0.05) inset',
+                  background: 'rgba(255,255,255,0.03)',
+                  letterSpacing: '0.3em',
+                }}
               />
-              {pwError && <p className="text-red-400 text-xs text-center">Senha incorreta</p>}
-              <button onClick={handleLogin} className="btn-primary w-full">
+              <button
+                onClick={handleLogin}
+                className="w-full py-3 rounded-xl font-bold text-sm tracking-widest uppercase transition-all duration-300 hover:brightness-110 active:scale-[0.98]"
+                style={{
+                  background: 'linear-gradient(135deg, #FF6A00, #FF8C00)',
+                  boxShadow: '0 4px 20px rgba(255,106,0,0.25)',
+                  color: 'white',
+                }}
+              >
                 Entrar
               </button>
             </div>
           </div>
         ) : (
+          /* DASHBOARD */
           <div className="flex flex-col overflow-hidden flex-1">
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-3 p-5 border-b border-white/8 flex-shrink-0">
-              <StatCard label="Hoje" value={todayCount} color="text-primary" />
-              <StatCard label="Total" value={bookings.length} color="text-text" />
-              <StatCard label="Disponíveis" value={availableToday.length} color="text-green-400" />
+            <div className="grid grid-cols-3 gap-3 p-4 border-b flex-shrink-0" style={{ borderColor: 'rgba(255,106,0,0.1)' }}>
+              <StatCard label="Hoje" value={todayCount} color="#FF6A00" />
+              <StatCard label="Total" value={bookings.length} color="rgba(255,255,255,0.7)" />
+              <StatCard label="Livres" value={availableToday.length} color="#4ade80" />
             </div>
 
             {/* Filter + Refresh */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-white/8 flex-shrink-0">
+            <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0" style={{ borderColor: 'rgba(255,106,0,0.1)' }}>
               <div className="flex gap-2">
                 {['today', 'all', 'pending'].map((f) => (
                   <button
                     key={f}
                     onClick={() => setFilter(f)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                      filter === f ? 'bg-primary text-white' : 'bg-surface-2 text-text-muted hover:text-text'
-                    }`}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider uppercase transition-all duration-200"
+                    style={filter === f
+                      ? { background: 'rgba(255,106,0,0.15)', border: '1px solid rgba(255,106,0,0.4)', color: '#FF6A00' }
+                      : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)' }
+                    }
                   >
                     {f === 'today' ? 'Hoje' : f === 'all' ? 'Todos' : 'Ativos'}
                   </button>
@@ -143,9 +185,12 @@ export default function AdminDashboard({ isOpen, onClose }) {
               </div>
               <button
                 onClick={handleRefresh}
-                className="flex items-center gap-1.5 text-text-muted hover:text-primary text-xs font-medium transition-colors"
+                className="flex items-center gap-1.5 text-xs font-medium transition-colors"
+                style={{ color: 'rgba(255,255,255,0.4)' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#FF6A00'}
+                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
               >
-                <RefreshCw size={13} />
+                <RefreshCw size={12} />
                 Atualizar
               </button>
             </div>
@@ -154,8 +199,8 @@ export default function AdminDashboard({ isOpen, onClose }) {
             <div className="overflow-y-auto flex-1 no-scrollbar p-4 space-y-3">
               {filteredBookings.length === 0 ? (
                 <div className="text-center py-12">
-                  <Calendar size={32} className="text-text-muted/30 mx-auto mb-3" />
-                  <p className="text-text-muted text-sm">Nenhum agendamento encontrado</p>
+                  <Calendar size={28} className="mx-auto mb-3" style={{ color: 'rgba(255,255,255,0.1)' }} />
+                  <p className="text-xs tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>Nenhum agendamento</p>
                 </div>
               ) : (
                 filteredBookings
@@ -176,13 +221,13 @@ export default function AdminDashboard({ isOpen, onClose }) {
 
             {/* Available Slots Today */}
             {filter === 'today' && availableToday.length > 0 && (
-              <div className="border-t border-white/8 p-4 flex-shrink-0">
-                <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-3">
-                  Horários Livres Hoje
+              <div className="border-t p-4 flex-shrink-0" style={{ borderColor: 'rgba(255,106,0,0.1)' }}>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                  Horários Livres
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {availableToday.map((t) => (
-                    <span key={t} className="text-xs bg-green-500/10 border border-green-500/20 text-green-400 px-3 py-1 rounded-lg font-medium">
+                    <span key={t} className="text-xs px-3 py-1 rounded-lg font-semibold" style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)', color: '#4ade80' }}>
                       {t}
                     </span>
                   ))}
@@ -191,6 +236,9 @@ export default function AdminDashboard({ isOpen, onClose }) {
             )}
           </div>
         )}
+
+        {/* Bottom accent */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
       </div>
     </div>
   )
@@ -198,9 +246,9 @@ export default function AdminDashboard({ isOpen, onClose }) {
 
 function StatCard({ label, value, color }) {
   return (
-    <div className="bg-surface-2 rounded-xl p-3 text-center">
-      <div className={`text-2xl font-black ${color}`}>{value}</div>
-      <div className="text-text-muted text-xs mt-0.5">{label}</div>
+    <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="text-2xl font-black" style={{ color }}>{value}</div>
+      <div className="text-[10px] uppercase tracking-widest mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>{label}</div>
     </div>
   )
 }
@@ -215,69 +263,79 @@ function BookingItem({ booking, onConfirm, onCancel, onReschedule, isReschedulin
   } catch {}
 
   return (
-    <div className={`bg-surface-2 rounded-2xl p-4 space-y-3 border transition-all duration-200
-      ${isCancelled ? 'border-white/5 opacity-50' : 'border-white/8 hover:border-white/15'}`}
+    <div
+      className="rounded-xl p-4 space-y-3 transition-all duration-200"
+      style={{
+        background: isCancelled ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.04)',
+        border: isCancelled ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(255,106,0,0.12)',
+        opacity: isCancelled ? 0.4 : 1,
+      }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-surface-3 flex items-center justify-center flex-shrink-0">
-            <User size={16} className="text-text-muted" />
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <User size={14} style={{ color: 'rgba(255,255,255,0.4)' }} />
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-sm truncate">{booking.clientName}</p>
-            <p className="text-text-muted text-xs">{booking.clientPhone}</p>
+            <p className="font-semibold text-sm truncate text-white">{booking.clientName}</p>
+            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{booking.clientPhone}</p>
           </div>
         </div>
         <div className="text-right flex-shrink-0">
-          <div className="flex items-center gap-1 text-primary font-bold text-sm">
-            <Clock size={13} />
+          <div className="flex items-center gap-1 font-bold text-sm" style={{ color: '#FF6A00' }}>
+            <Clock size={12} />
             {booking.time}
           </div>
-          <div className="text-text-muted text-xs">{dateLabel}</div>
+          <div className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>{dateLabel}</div>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 pt-1 border-t border-white/5">
-        <Scissors size={12} className="text-primary flex-shrink-0" />
-        <span className="text-sm font-medium">{booking.service?.name}</span>
-        <span className="text-text-muted text-xs ml-auto">{booking.service?.priceDisplay}</span>
+      <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+        <Scissors size={11} style={{ color: '#FF6A00', flexShrink: 0 }} />
+        <span className="text-xs font-medium text-white">{booking.service?.name}</span>
+        <span className="text-xs ml-auto" style={{ color: 'rgba(255,255,255,0.35)' }}>{booking.service?.priceDisplay}</span>
       </div>
 
       {!isCancelled && (
         <div className="flex gap-2 pt-1">
           <button
             onClick={onConfirm}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold hover:bg-green-500/20 transition-all"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+            style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)', color: '#4ade80' }}
           >
-            <Check size={12} />
-            Confirmar
+            <Check size={11} />
+            OK
           </button>
           <button
             onClick={onToggleReschedule}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-semibold hover:bg-primary/20 transition-all"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+            style={{ background: 'rgba(255,106,0,0.08)', border: '1px solid rgba(255,106,0,0.2)', color: '#FF6A00' }}
           >
-            <RefreshCw size={12} />
+            <RefreshCw size={11} />
             Reagendar
           </button>
           <button
             onClick={onCancel}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold hover:bg-red-500/20 transition-all"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}
           >
-            <XCircle size={12} />
+            <XCircle size={11} />
             Cancelar
           </button>
         </div>
       )}
 
       {isRescheduling && (
-        <div className="grid grid-cols-5 gap-1.5 pt-1 border-t border-white/8">
-          <p className="col-span-5 text-xs text-text-muted mb-1">Selecionar novo horário:</p>
+        <div className="grid grid-cols-5 gap-1.5 pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
           {TIME_SLOTS.map((t) => (
             <button
               key={t}
               onClick={() => onReschedule(t)}
-              className={`py-1.5 rounded-lg text-xs font-semibold transition-all
-                ${t === booking.time ? 'bg-primary/20 text-primary border border-primary/40' : 'bg-surface-3 text-text-muted hover:text-text hover:bg-surface hover:border hover:border-white/20'}`}
+              className="py-1.5 rounded-lg text-xs font-semibold transition-all"
+              style={t === booking.time
+                ? { background: 'rgba(255,106,0,0.2)', border: '1px solid rgba(255,106,0,0.5)', color: '#FF6A00' }
+                : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)' }
+              }
             >
               {t}
             </button>
