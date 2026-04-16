@@ -50,6 +50,23 @@ export async function saveBooking(booking) {
   const local = lsGet(); local.push(booking); lsSet(local)
   const { error } = await supabase.from('bookings').insert(toRow(booking))
   if (error) console.error('Supabase insert error:', error.message)
+
+  try {
+    await fetch('/.netlify/functions/add-to-calendar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientName: booking.clientName,
+        clientPhone: booking.clientPhone,
+        service: booking.service?.name ?? booking.service,
+        dateStr: booking.dateStr,
+        time: booking.time,
+        duration: booking.service?.duration ?? 60,
+      }),
+    })
+  } catch (e) {
+    console.warn('Google Calendar sync failed:', e.message)
+  }
 }
 
 export async function cancelBooking(id) {
