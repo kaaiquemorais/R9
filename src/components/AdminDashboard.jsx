@@ -370,33 +370,33 @@ export default function AdminDashboard({ isOpen, onClose }) {
                     <button key={f} onClick={() => setFilter(f)} style={pill(filter===f)}>{l}</button>
                   ))}
                   <button onClick={() => setAddOpen(o => !o)} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', background: T.accentBg, border: `1px solid ${T.accentBorder}`, color: T.accent }}>
-                    📱 Novo
+                    Agendar horário
                   </button>
                 </div>
 
                 {/* Formulário agendamento manual (WhatsApp) */}
                 {addOpen && (
                   <div style={{ margin: '0 20px 14px', background: T.card, border: `1px solid ${T.accentBorder}`, borderRadius: 14, padding: 16, flexShrink: 0 }}>
-                    <p style={{ ...sectionTitle, marginBottom: 12, color: T.accent }}>Novo agendamento (WhatsApp)</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                    <p style={{ ...sectionTitle, marginBottom: 14, color: T.accent }}>Agendar horário</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
                       <input placeholder="Nome do cliente" value={addForm.clientName} onChange={e => setAddForm(f => ({ ...f, clientName: e.target.value }))}
-                        style={{ background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '9px 12px', fontSize: 13, color: T.text, outline: 'none' }} />
+                        style={{ width: '100%', boxSizing: 'border-box', background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '10px 12px', fontSize: 13, color: T.text, outline: 'none' }} />
                       <input placeholder="WhatsApp" value={addForm.clientPhone} onChange={e => setAddForm(f => ({ ...f, clientPhone: e.target.value }))}
-                        style={{ background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '9px 12px', fontSize: 13, color: T.text, outline: 'none' }} />
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
+                        style={{ width: '100%', boxSizing: 'border-box', background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '10px 12px', fontSize: 13, color: T.text, outline: 'none' }} />
                       <select value={addForm.serviceId} onChange={e => setAddForm(f => ({ ...f, serviceId: e.target.value }))}
-                        style={{ background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '9px 12px', fontSize: 13, color: T.text, outline: 'none' }}>
+                        style={{ width: '100%', boxSizing: 'border-box', background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '10px 12px', fontSize: 13, color: T.text, outline: 'none' }}>
                         <option value="">Serviço</option>
                         {SERVICES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
-                      <input type="date" value={addForm.dateStr} onChange={e => setAddForm(f => ({ ...f, dateStr: e.target.value }))}
-                        style={{ background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '9px 12px', fontSize: 13, color: T.text, outline: 'none' }} />
-                      <select value={addForm.time} onChange={e => setAddForm(f => ({ ...f, time: e.target.value }))}
-                        style={{ background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '9px 12px', fontSize: 13, color: T.text, outline: 'none' }}>
-                        <option value="">Horário</option>
-                        {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <input type="date" value={addForm.dateStr} onChange={e => setAddForm(f => ({ ...f, dateStr: e.target.value }))}
+                          style={{ width: '100%', boxSizing: 'border-box', background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '10px 12px', fontSize: 13, color: T.text, outline: 'none' }} />
+                        <select value={addForm.time} onChange={e => setAddForm(f => ({ ...f, time: e.target.value }))}
+                          style={{ width: '100%', boxSizing: 'border-box', background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '10px 12px', fontSize: 13, color: T.text, outline: 'none' }}>
+                          <option value="">Horário</option>
+                          {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button onClick={handleAddBooking} style={{ flex: 1, padding: '10px 0', fontSize: 13, fontWeight: 700, background: 'linear-gradient(135deg,#FF6A00,#FF8C00)', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer' }}>
