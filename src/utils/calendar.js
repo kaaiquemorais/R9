@@ -52,20 +52,20 @@ export async function saveBooking(booking) {
   if (error) console.error('Supabase insert error:', error.message)
 
   try {
-    await fetch('/.netlify/functions/add-to-calendar', {
+    await fetch('https://hook.us2.make.com/ei283xqkjtq6pr2huwtr5qaw4ymtcgts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        clientName: booking.clientName,
-        clientPhone: booking.clientPhone,
+        client_name: booking.clientName,
+        client_phone: booking.clientPhone,
         service: booking.service?.name ?? booking.service,
-        dateStr: booking.dateStr,
+        date_str: booking.dateStr,
         time: booking.time,
         duration: booking.service?.duration ?? 60,
       }),
     })
   } catch (e) {
-    console.warn('Google Calendar sync failed:', e.message)
+    console.warn('Make.com webhook failed:', e.message)
   }
 }
 
