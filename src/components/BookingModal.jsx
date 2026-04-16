@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
-import { X, ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Bell, ExternalLink, Scissors } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Bell, Scissors } from 'lucide-react'
 
 import { format, addDays, startOfDay, isBefore } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { SERVICES, TIME_SLOTS, REMINDER_OPTIONS } from '../data/services'
 import {
   formatDatePtBR,
-  generateGoogleCalendarUrl,
   scheduleNotification,
   requestNotificationPermission,
   saveBooking,
@@ -50,7 +49,6 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
   const [clientPhone, setClientPhone] = useState('')
   const [calendarMonth, setCalendarMonth] = useState(new Date())
   const [confirmed, setConfirmed] = useState(false)
-  const [googleCalUrl, setGoogleCalUrl] = useState('')
 
   const combinedService = buildCombined(selectedServices)
 
@@ -135,9 +133,6 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
 
     await saveBooking(booking)
 
-    const url = generateGoogleCalendarUrl(booking)
-    setGoogleCalUrl(url)
-
     const reminderOption = REMINDER_OPTIONS.find((r) => r.id === reminder)
     const hasPermission = await requestNotificationPermission()
     if (hasPermission && reminderOption) {
@@ -175,17 +170,6 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
             <BookingDetail icon={<User size={16} />} label="Serviço" value={combinedService?.name} />
             <BookingDetail icon={<Bell size={16} />} label="Lembrete" value={REMINDER_OPTIONS.find(r => r.id === reminder)?.label} />
           </div>
-
-          <a
-            href={googleCalUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 bg-surface-2 hover:bg-surface-3 border border-white/10 hover:border-primary/30 text-text py-3 px-6 rounded-xl transition-all duration-300 font-medium text-sm"
-          >
-            <Calendar size={16} className="text-primary" />
-            Adicionar ao Google Agenda
-            <ExternalLink size={13} className="text-text-muted" />
-          </a>
 
           <button onClick={onClose} className="btn-primary w-full">
             Fechar

@@ -51,22 +51,6 @@ export async function saveBooking(booking) {
   const { error } = await supabase.from('bookings').insert(toRow(booking))
   if (error) console.error('Supabase insert error:', error.message)
 
-  try {
-    await fetch('https://hook.us2.make.com/ei283xqkjtq6pr2huwtr5qaw4ymtcgts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_name: booking.clientName,
-        client_phone: booking.clientPhone,
-        service: booking.service?.name ?? booking.service,
-        date_str: booking.dateStr,
-        time: booking.time,
-        duration: booking.service?.duration ?? 60,
-      }),
-    })
-  } catch (e) {
-    console.warn('Make.com webhook failed:', e.message)
-  }
 }
 
 export async function cancelBooking(id) {
