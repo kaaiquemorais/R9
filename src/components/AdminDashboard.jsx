@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { X, Check, XCircle, RefreshCw, Download, Users, Calendar, Clock, Scissors, Sun, Moon, Lock, Unlock, Trash2, User } from 'lucide-react'
-import { format, isToday, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns'
+import { format, isToday, isYesterday, parseISO, isWithinInterval, startOfDay, endOfDay, subDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import {
   getBookedSlots, cancelBooking, updateBookingStatus, rescheduleBooking,
   getBlockedSlots, blockSlot, unblockSlot,
@@ -131,9 +132,23 @@ export default function AdminDashboard({ isOpen, onClose }) {
   const todayRevenue = todayList.filter(b => b.status !== 'cancelled').reduce((s, b) => s + (b.service?.price || 0), 0)
   const freeTodaySlots = TIME_SLOTS.filter(t => !todayList.map(b => b.time).includes(t))
 
+  const yesterdayList = bookings.filter(b => { try { return isYesterday(parseISO(b.dateStr)) } catch { return false } })
+
+  const chartData = Array.from({ length: 7 }, (_, i) => {
+    const d = subDays(new Date(), 6 - i)
+    const dateStr = format(d, 'yyyy-MM-dd')
+    const dayBookings = activeList.filter(b => b.dateStr === dateStr)
+    return {
+      dia: format(d, 'dd/MM'),
+      agendamentos: dayBookings.length,
+      receita: dayBookings.reduce((s, b) => s + (b.service?.price || 0), 0),
+    }
+  })
+
   const getFiltered = () => bookings.filter(b => {
     try {
       if (filter === 'today')     return isToday(parseISO(b.dateStr))
+      if (filter === 'yesterday') return isYesterday(parseISO(b.dateStr))
       if (filter === 'active')    return b.status !== 'cancelled'
       if (filter === 'cancelled') return b.status === 'cancelled'
       if (filter === 'range' && dateFrom && dateTo)
@@ -291,8 +306,8 @@ export default function AdminDashboard({ isOpen, onClose }) {
                 </div>
 
                 {/* Filters */}
-                <div style={{ display: 'flex', gap: 6, padding: '0 20px 14px', flexShrink: 0 }}>
-                  {[['today','Hoje'],['active','Ativos'],['cancelled','Cancelados'],['all','Todos']].map(([f,l]) => (
+                <div style={{ display: 'flex', gap: 6, padding: '0 20px 14px', flexShrink: 0, flexWrap: 'wrap' }}>
+                  {[['today','Hoje'],['yesterday','Ontem'],['active','Ativos'],['cancelled','Cancelados'],['all','Todos']].map(([f,l]) => (
                     <button key={f} onClick={() => setFilter(f)} style={pill(filter===f)}>{l}</button>
                   ))}
                 </div>
@@ -342,6 +357,29 @@ export default function AdminDashboard({ isOpen, onClose }) {
                       <p style={{ fontSize: 11, color: T.textMuted, margin: 0 }}>{c.sub}</p>
                     </div>
                   ))}
+                </div>
+
+                {/* Chart */}
+                <div style={card({ padding: 16 })}>
+                  <p style={sectionTitle}>Últimos 7 dias</p>
+                  <ResponsiveContainer width="100%" height={160}>
+                    <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="gAgenda" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#FF6A00" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#FF6A00" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke={T.cardBorder} vertical={false} />
+                      <XAxis dataKey="dia" tick={{ fontSize: 11, fill: T.textSub }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: T.textSub }} axisLine={false} tickLine={false} allowDecimals={false} />
+                      <Tooltip
+                        contentStyle={{ background: T.card, border: `1px solid ${T.cardBorder}`, borderRadius: 8, fontSize: 12, color: T.text }}
+                        formatter={(v, n) => [v, n === 'agendamentos' ? 'Agendamentos' : 'Receita (R$)']}
+                      />
+                      <Area type="monotone" dataKey="agendamentos" stroke="#FF6A00" strokeWidth={2} fill="url(#gAgenda)" dot={{ r: 3, fill: '#FF6A00' }} activeDot={{ r: 5 }} />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
 
                 {/* Services */}

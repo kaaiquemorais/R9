@@ -46,6 +46,22 @@ export async function getBookedSlots() {
   } catch { return lsGet() }
 }
 
+export async function checkSlotTaken(dateStr, time) {
+  try {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('date_str', dateStr)
+      .eq('time', time)
+      .neq('status', 'cancelled')
+      .limit(1)
+    if (error) throw error
+    return data.length > 0
+  } catch {
+    return lsGet().some(b => b.dateStr === dateStr && b.time === time && b.status !== 'cancelled')
+  }
+}
+
 export async function saveBooking(booking) {
   const local = lsGet(); local.push(booking); lsSet(local)
   const { error } = await supabase.from('bookings').insert(toRow(booking))

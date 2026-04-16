@@ -9,6 +9,7 @@ import {
   scheduleNotification,
   requestNotificationPermission,
   saveBooking,
+  checkSlotTaken,
   isSlotBooked,
   isDayFullyBlocked,
 } from '../utils/calendar'
@@ -115,6 +116,13 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
   const handleConfirm = async () => {
     if (!clientName.trim() || !clientPhone.trim()) {
       toast.error('Preencha seu nome e telefone')
+      return
+    }
+
+    const taken = await checkSlotTaken(format(selectedDate, 'yyyy-MM-dd'), selectedTime)
+    if (taken) {
+      toast.error('Este horário acabou de ser reservado. Escolha outro horário.')
+      setStep(3)
       return
     }
 
