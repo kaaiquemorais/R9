@@ -5,9 +5,9 @@ import { ptBR } from 'date-fns/locale'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import {
   getBookedSlots, cancelBooking, updateBookingStatus, rescheduleBooking,
-  getBlockedSlots, blockSlot, unblockSlot,
+  getBlockedSlots, blockSlot, unblockSlot, saveBooking,
 } from '../utils/calendar'
-import { TIME_SLOTS } from '../data/services'
+import { TIME_SLOTS, SERVICES } from '../data/services'
 import toast from 'react-hot-toast'
 
 const ADMIN_PASSWORD = 'vet997'
@@ -93,9 +93,12 @@ function buildCalendarUrl(b) {
   } catch { return null }
 }
 
+function svcName(b) { return (typeof b.service === 'object' ? b.service?.name : b.service) || '' }
+function svcPrice(b) { return (typeof b.service === 'object' ? b.service?.priceDisplay : '') || '' }
+
 function exportCSV(bookings, label) {
   const rows = [['Nome', 'Telefone', 'Serviço', 'Preço', 'Data', 'Hora', 'Status']]
-  bookings.forEach(b => rows.push([b.clientName||'', b.clientPhone||'', b.service?.name||'', b.service?.priceDisplay||'', b.dateStr||'', b.time||'', b.status||'confirmado']))
+  bookings.forEach(b => rows.push([b.clientName||'', b.clientPhone||'', svcName(b), svcPrice(b), b.dateStr||'', b.time||'', b.status||'confirmado']))
   const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n')
   const blob = new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
@@ -121,6 +124,10 @@ export default function AdminDashboard({ isOpen, onClose }) {
   const [blockDate, setBlockDate]   = useState('')
   const [blockAllDay, setBlockAllDay] = useState(true)
   const [blockTimes, setBlockTimes] = useState([])
+
+  // Novo agendamento manual
+  const [addOpen, setAddOpen] = useState(false)
+  const [addForm, setAddForm] = useState({ clientName: '', clientPhone: '', serviceId: '', dateStr: '', time: '' })
 
   const T = themes[theme]
 
@@ -182,7 +189,7 @@ export default function AdminDashboard({ isOpen, onClose }) {
   })
 
   const serviceBreakdown = Object.entries(
-    activeList.reduce((acc, b) => { const n = b.service?.name||'Outro'; acc[n]=(acc[n]||0)+1; return acc }, {})
+    activeList.reduce((acc, b) => { const n = svcName(b)||'Outro'; acc[n]=(acc[n]||0)+1; return acc }, {})
   ).sort((a, b) => b[1] - a[1])
 
   /* ── Block handlers ── */
@@ -208,6 +215,26 @@ export default function AdminDashboard({ isOpen, onClose }) {
 
   const toggleBlockTime = (t) =>
     setBlockTimes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
+
+  const handleAddBooking = async () => {
+    const { clientName, clientPhone, serviceId, dateStr, time } = addForm
+    if (!clientName.trim() || !dateStr || !time || !serviceId) { toast.error('Preencha todos os campos'); return }
+    const svc = SERVICES.find(s => s.id === Number(serviceId))
+    const booking = {
+      id: Date.now().toString(),
+      clientName: clientName.trim(),
+      clientPhone: clientPhone.trim(),
+      service: { name: svc?.name || serviceId, price: svc?.price || null, priceDisplay: svc?.priceDisplay || 'R$ Consultar', duration: svc?.duration || 60 },
+      dateStr, time,
+      status: 'confirmed',
+      createdAt: new Date().toISOString(),
+    }
+    await saveBooking(booking)
+    setBookings(await getBookedSlots())
+    setAddForm({ clientName: '', clientPhone: '', serviceId: '', dateStr: '', time: '' })
+    setAddOpen(false)
+    toast.success('Agendamento registrado!')
+  }
 
   /* ── Shared style helpers ── */
   const card = (extra = {}) => ({
@@ -320,12 +347,50 @@ export default function AdminDashboard({ isOpen, onClose }) {
                   ))}
                 </div>
 
-                {/* Filters */}
-                <div style={{ display: 'flex', gap: 6, padding: '0 20px 14px', flexShrink: 0, flexWrap: 'wrap' }}>
+                {/* Filters + botão novo */}
+                <div style={{ display: 'flex', gap: 6, padding: '0 20px 14px', flexShrink: 0, flexWrap: 'wrap', alignItems: 'center' }}>
                   {[['today','Hoje'],['yesterday','Ontem'],['active','Ativos'],['cancelled','Cancelados'],['all','Todos']].map(([f,l]) => (
                     <button key={f} onClick={() => setFilter(f)} style={pill(filter===f)}>{l}</button>
                   ))}
+                  <button onClick={() => setAddOpen(o => !o)} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', background: T.accentBg, border: `1px solid ${T.accentBorder}`, color: T.accent }}>
+                    📱 Novo
+                  </button>
                 </div>
+
+                {/* Formulário agendamento manual (WhatsApp) */}
+                {addOpen && (
+                  <div style={{ margin: '0 20px 14px', background: T.card, border: `1px solid ${T.accentBorder}`, borderRadius: 14, padding: 16, flexShrink: 0 }}>
+                    <p style={{ ...sectionTitle, marginBottom: 12, color: T.accent }}>Novo agendamento (WhatsApp)</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                      <input placeholder="Nome do cliente" value={addForm.clientName} onChange={e => setAddForm(f => ({ ...f, clientName: e.target.value }))}
+                        style={{ background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '9px 12px', fontSize: 13, color: T.text, outline: 'none' }} />
+                      <input placeholder="WhatsApp" value={addForm.clientPhone} onChange={e => setAddForm(f => ({ ...f, clientPhone: e.target.value }))}
+                        style={{ background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '9px 12px', fontSize: 13, color: T.text, outline: 'none' }} />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
+                      <select value={addForm.serviceId} onChange={e => setAddForm(f => ({ ...f, serviceId: e.target.value }))}
+                        style={{ background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '9px 12px', fontSize: 13, color: T.text, outline: 'none' }}>
+                        <option value="">Serviço</option>
+                        {SERVICES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      </select>
+                      <input type="date" value={addForm.dateStr} onChange={e => setAddForm(f => ({ ...f, dateStr: e.target.value }))}
+                        style={{ background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '9px 12px', fontSize: 13, color: T.text, outline: 'none' }} />
+                      <select value={addForm.time} onChange={e => setAddForm(f => ({ ...f, time: e.target.value }))}
+                        style={{ background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '9px 12px', fontSize: 13, color: T.text, outline: 'none' }}>
+                        <option value="">Horário</option>
+                        {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={handleAddBooking} style={{ flex: 1, padding: '10px 0', fontSize: 13, fontWeight: 700, background: 'linear-gradient(135deg,#FF6A00,#FF8C00)', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer' }}>
+                        Salvar agendamento
+                      </button>
+                      <button onClick={() => setAddOpen(false)} style={{ padding: '10px 16px', fontSize: 13, fontWeight: 600, background: T.inputBg, border: `1px solid ${T.inputBorder}`, color: T.textSub, borderRadius: 10, cursor: 'pointer' }}>
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* List */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -383,7 +448,7 @@ export default function AdminDashboard({ isOpen, onClose }) {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
                   {[
                     { label: 'Receita Total',  value: `R$ ${totalRevenue.toFixed(2).replace('.',',')}`, sub: `${activeList.length} ativos`, bg: T.accentBg, border: T.accentBorder, color: T.accent },
-                    { label: 'Receita Hoje',   value: `R$ ${todayRevenue.toFixed(2).replace('.',',')}`,  sub: `${todayList.filter(b=>b.status!=='cancelled').length} hoje`, bg: T.card, border: T.cardBorder, color: T.text },
+                    { label: 'Receita Hoje',   value: `R$ ${todayRevenue.toFixed(2).replace('.',',')}`,  sub: `${todayList.filter(b=>b.status!=='cancelled').length} agendamento(s)`, bg: T.card, border: T.cardBorder, color: T.text },
                     { label: 'Cancelados',  value: cancelledCount,  sub: 'total',   bg: T.redBg, border: T.redBorder, color: T.red },
                   ].map(c => (
                     <div key={c.label} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 12, padding: '14px 12px', overflow: 'hidden', minWidth: 0 }}>
@@ -436,6 +501,29 @@ export default function AdminDashboard({ isOpen, onClose }) {
                         </div>
                       )
                     })}
+                </div>
+
+                {/* Lista de agendamentos com hora */}
+                <div style={card({ padding: 16 })}>
+                  <p style={sectionTitle}>Agendamentos ativos</p>
+                  {activeList.length === 0
+                    ? <p style={{ fontSize: 13, color: T.textMuted, margin: 0 }}>Nenhum agendamento ativo</p>
+                    : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {[...activeList].sort((a,b)=>(a.dateStr||'').localeCompare(b.dateStr||'')||(a.time||'').localeCompare(b.time||'')).map(b => (
+                          <div key={b.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 10 }}>
+                            <div>
+                              <p style={{ fontSize: 13, fontWeight: 700, color: T.text, margin: 0 }}>{b.clientName}</p>
+                              <p style={{ fontSize: 11, color: T.textSub, margin: 0 }}>{svcName(b)} · {svcPrice(b)}</p>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <p style={{ fontSize: 13, fontWeight: 800, color: T.accent, margin: 0 }}>{b.time}</p>
+                              <p style={{ fontSize: 11, color: T.textMuted, margin: 0 }}>{b.dateStr}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                 </div>
 
                 {/* Export */}

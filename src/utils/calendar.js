@@ -11,10 +11,12 @@ export function formatDateShort(date) {
 
 /* ── Mapeamento Supabase ↔ JS ── */
 function toRow(b) {
-  return { id: b.id, client_name: b.clientName, client_phone: b.clientPhone, service: b.service, date_str: b.dateStr, time: b.time, reminder: b.reminder, status: b.status || 'confirmed', created_at: b.createdAt }
+  return { id: b.id, client_name: b.clientName, client_phone: b.clientPhone, service: typeof b.service === 'object' ? JSON.stringify(b.service) : b.service, date_str: b.dateStr, time: b.time, reminder: b.reminder, status: b.status || 'confirmed', created_at: b.createdAt }
 }
 function fromRow(r) {
-  return { id: r.id, clientName: r.client_name, clientPhone: r.client_phone, service: r.service, dateStr: r.date_str, time: r.time, reminder: r.reminder, status: r.status, createdAt: r.created_at }
+  let service = r.service
+  try { if (typeof r.service === 'string' && r.service.startsWith('{')) service = JSON.parse(r.service) } catch {}
+  return { id: r.id, clientName: r.client_name, clientPhone: r.client_phone, service, dateStr: r.date_str, time: r.time, reminder: r.reminder, status: r.status, createdAt: r.created_at }
 }
 
 /* ── localStorage ── */
