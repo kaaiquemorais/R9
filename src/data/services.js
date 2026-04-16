@@ -31,16 +31,6 @@ export const SERVICES = [
     highlight: true,
   },
   {
-    id: 4,
-    name: 'Pezinho',
-    price: null,
-    priceDisplay: 'R$ Consultar',
-    duration: 15,
-    durationDisplay: '15 min',
-    iconName: 'Scissors',
-    description: 'Acabamento e definição das entradas',
-  },
-  {
     id: 5,
     name: 'Sobrancelhas',
     price: 15.0,
@@ -49,6 +39,16 @@ export const SERVICES = [
     durationDisplay: '15 min',
     iconName: 'Scissors',
     description: 'Design e alinhamento das sobrancelhas',
+  },
+  {
+    id: 4,
+    name: 'Pezinho',
+    price: null,
+    priceDisplay: 'R$ Consultar',
+    duration: 15,
+    durationDisplay: '15 min',
+    iconName: 'Scissors',
+    description: 'Acabamento e definição das entradas',
   },
   {
     id: 6,

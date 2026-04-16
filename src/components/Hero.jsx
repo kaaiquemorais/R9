@@ -38,7 +38,7 @@ export default function Hero({ onBookNow }) {
             {/* Logo */}
             <div className="flex justify-center lg:justify-start mb-6 animate-fade-in">
               <img
-                src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png"
+                src="https://i.postimg.cc/Vs2HNR1x/logo-r9-certo.png"
                 alt="R9 Barbearia"
                 className="h-52 sm:h-44 w-auto object-contain drop-shadow-[0_0_20px_rgba(255,106,0,0.35)]"
               />

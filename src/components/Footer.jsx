@@ -47,7 +47,7 @@ export default function Footer({ onBookNow, onOpenAdmin }) {
           {/* Brand */}
           <div className="space-y-4">
             <img
-              src="https://i.postimg.cc/zBrYSf50/R9-LOGO.png"
+              src="https://i.postimg.cc/Vs2HNR1x/logo-r9-certo.png"
               alt="R9 Barbearia"
               className="h-10 w-auto object-contain"
               onError={(e) => {
