@@ -261,6 +261,16 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
               Pular
             </button>
           )}
+
+          {/* Aviso de cancelamento */}
+          <div className="w-full bg-white/3 border border-white/8 rounded-2xl px-4 py-3 text-left">
+            <p className="text-xs text-text-muted leading-relaxed">
+              Precisa cancelar? Acesse o site e clique em{' '}
+              <span className="text-text font-semibold">"Informar cancelamento"</span>,
+              informe seu telefone e cancele seu horário.
+              Pedimos pelo menos <span className="text-amber-400 font-semibold">3 horas de antecedência</span>.
+            </p>
+          </div>
         </div>
       </ModalWrapper>
     )

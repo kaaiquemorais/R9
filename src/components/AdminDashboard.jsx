@@ -130,6 +130,9 @@ export default function AdminDashboard({ isOpen, onClose }) {
   const [addOpen, setAddOpen] = useState(false)
   const [addForm, setAddForm] = useState({ clientName: '', clientPhone: '', serviceId: '', dateStr: '', time: '' })
 
+  // Popup Google Calendar após confirmar
+  const [calPopup, setCalPopup] = useState(null)
+
   const T = themes[theme]
 
   // Real-time: load + subscribe whenever authenticated and open
@@ -416,25 +419,9 @@ export default function AdminDashboard({ isOpen, onClose }) {
                     : sorted.map(b => (
                       <BookingCard key={b.id} b={b} T={T}
                         onConfirm={async () => {
-                          await updateBookingStatus(b.id,'confirmed')
+                          await updateBookingStatus(b.id, 'confirmed')
                           setBookings(await getBookedSlots())
-                          const url = buildCalendarUrl(b)
-                          toast((t) => (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                              <span style={{ fontWeight: 700, fontSize: 13 }}>✅ Agendamento confirmado!</span>
-                              {url && (
-                                <a href={url} target="_blank" rel="noopener noreferrer"
-                                  onClick={() => toast.dismiss(t.id)}
-                                  style={{ fontSize: 12, color: '#FF6A00', fontWeight: 600, textDecoration: 'none' }}>
-                                  📅 Adicionar ao Google Agenda →
-                                </a>
-                              )}
-                              <button onClick={() => toast.dismiss(t.id)}
-                                style={{ fontSize: 11, color: '#888', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}>
-                                Agora não
-                              </button>
-                            </div>
-                          ), { duration: 8000 })
+                          setCalPopup(b)
                         }}
                         onCancel={async () => { await cancelBooking(b.id); setBookings(await getBookedSlots()); toast.success('Cancelado') }}
                         onReschedule={async t => { await rescheduleBooking(b.id,t); setBookings(await getBookedSlots()); setReId(null); toast.success('Reagendado!') }}
@@ -644,6 +631,48 @@ export default function AdminDashboard({ isOpen, onClose }) {
           </>
         )}
       </div>
+
+      {/* ── Popup Google Calendar ── */}
+      {calPopup && (() => {
+        const url = buildCalendarUrl(calPopup)
+        return (
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, borderRadius: 'inherit', padding: 24 }}>
+            <div style={{ background: T.panel, border: `1px solid ${T.accentBorder}`, borderRadius: 20, padding: 28, width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, textAlign: 'center' }}>
+              <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Check size={24} color="#4ade80" />
+              </div>
+              <div>
+                <p style={{ fontSize: 16, fontWeight: 800, color: T.text, margin: '0 0 4px' }}>Agendamento confirmado!</p>
+                <p style={{ fontSize: 13, color: T.textSub, margin: 0 }}>
+                  {calPopup.clientName} — {calPopup.time}
+                </p>
+              </div>
+              <p style={{ fontSize: 13, color: T.textSub, margin: 0 }}>
+                Deseja salvar este horário no Google Agenda?
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+                {url && (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setCalPopup(null)}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '11px 0', borderRadius: 12, fontSize: 13, fontWeight: 700, background: 'linear-gradient(135deg,#FF6A00,#FF8C00)', color: '#fff', textDecoration: 'none' }}
+                  >
+                    <Calendar size={15} /> Sim, salvar no Google Agenda
+                  </a>
+                )}
+                <button
+                  onClick={() => setCalPopup(null)}
+                  style={{ padding: '11px 0', borderRadius: 12, fontSize: 13, fontWeight: 600, background: T.inputBg, border: `1px solid ${T.inputBorder}`, color: T.textSub, cursor: 'pointer' }}
+                >
+                  Não, obrigado
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

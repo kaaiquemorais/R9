@@ -6,6 +6,7 @@ import Services from './components/Services'
 import BookingModal from './components/BookingModal'
 import BusinessInfo from './components/BusinessInfo'
 import AdminDashboard from './components/AdminDashboard'
+import CancelModal from './components/CancelModal'
 import Footer from './components/Footer'
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
 
   const [bookingOpen, setBookingOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
+  const [cancelOpen, setCancelOpen] = useState(false)
   const [preselectedService, setPreselectedService] = useState(null)
 
   const openBooking = useCallback((service = null) => {
@@ -53,7 +55,7 @@ export default function App() {
         <BusinessInfo />
       </main>
 
-      <Footer onBookNow={() => openBooking()} onOpenAdmin={() => setAdminOpen(true)} />
+      <Footer onBookNow={() => openBooking()} onOpenAdmin={() => setAdminOpen(true)} onOpenCancel={() => setCancelOpen(true)} />
 
       <BookingModal
         isOpen={bookingOpen}
