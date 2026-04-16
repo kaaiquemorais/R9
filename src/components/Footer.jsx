@@ -49,7 +49,7 @@ export default function Footer({ onBookNow, onOpenAdmin }) {
             <img
               src="https://i.postimg.cc/Vs2HNR1x/logo-r9-certo.png"
               alt="R9 Barbearia"
-              className="h-10 w-auto object-contain"
+              className="h-10 w-auto object-contain lg:-ml-3"
               onError={(e) => {
                 e.target.style.display = 'none'
                 e.target.nextSibling.style.display = 'block'
