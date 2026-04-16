@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react'
-import { X, ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Bell, Scissors } from 'lucide-react'
-
-import { format, addDays, startOfDay, isBefore } from 'date-fns'
+import { X, ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Bell } from 'lucide-react'
+import { format, startOfDay, isBefore } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { SERVICES, TIME_SLOTS, REMINDER_OPTIONS } from '../data/services'
+import { SERVICES, TIME_SLOTS } from '../data/services'
 import {
   formatDatePtBR,
-  scheduleNotification,
-  requestNotificationPermission,
   saveBooking,
   checkSlotTaken,
   isSlotBooked,
@@ -17,11 +14,12 @@ import toast from 'react-hot-toast'
 
 const LOGO = 'https://i.postimg.cc/Vs2HNR1x/logo-r9-certo.png'
 
-const STEPS = [
-  { id: 1, label: 'Serviço' },
-  { id: 2, label: 'Data' },
-  { id: 3, label: 'Hora' },
-  { id: 4, label: 'Confirmar' },
+const REMINDER_OPTS = [
+  { label: '15 min', minutes: 15 },
+  { label: '30 min', minutes: 30 },
+  { label: '1 hora', minutes: 60 },
+  { label: '2 horas', minutes: 120 },
+  { label: '1 dia',  minutes: 1440 },
 ]
 
 function buildCombined(services) {
@@ -32,24 +30,41 @@ function buildCombined(services) {
   return {
     name: services.map(s => s.name).join(' + '),
     price: totalPrice,
-    priceDisplay: hasConsultar
-      ? 'R$ Consultar'
-      : `R$ ${totalPrice.toFixed(2).replace('.', ',')}`,
+    priceDisplay: hasConsultar ? 'R$ Consultar' : `R$ ${totalPrice.toFixed(2).replace('.', ',')}`,
     duration: totalDuration,
     durationDisplay: `${totalDuration} min`,
   }
 }
 
+function buildGoogleCalUrl(booking, reminderMinutes) {
+  try {
+    const [h, m] = booking.time.split(':').map(Number)
+    const start = new Date(`${booking.dateStr}T00:00:00`)
+    start.setHours(h, m, 0, 0)
+    const end = new Date(start.getTime() + (booking.service?.duration || 60) * 60000)
+    const fmt = d => d.toISOString().replace(/[-:]/g, '').slice(0, 15)
+    const text = encodeURIComponent(`R9 Barbearia – ${booking.service?.name}`)
+    const details = encodeURIComponent(`Serviço: ${booking.service?.name}\nValor: ${booking.service?.priceDisplay}\nRua Fernando de Noronha, 100 – Bragança Paulista/SP`)
+    const location = encodeURIComponent('Rua Fernando de Noronha, 100, Bragança Paulista/SP')
+    let url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${fmt(start)}/${fmt(end)}&details=${details}&location=${location}&sf=true&output=xml`
+    if (reminderMinutes) url += `&crm=POPUP&crmtime=${reminderMinutes}`
+    return url
+  } catch { return null }
+}
+
 export default function BookingModal({ isOpen, onClose, preselectedService }) {
-  const [step, setStep] = useState(1)
+  const [step, setStep]                     = useState(1)
   const [selectedServices, setSelectedServices] = useState(preselectedService ? [preselectedService] : [])
-  const [selectedDate, setSelectedDate] = useState(null)
-  const [selectedTime, setSelectedTime] = useState(null)
-  const [reminder, setReminder] = useState('1h')
-  const [clientName, setClientName] = useState('')
-  const [clientPhone, setClientPhone] = useState('')
-  const [calendarMonth, setCalendarMonth] = useState(new Date())
-  const [confirmed, setConfirmed] = useState(false)
+  const [selectedDate, setSelectedDate]     = useState(null)
+  const [selectedTime, setSelectedTime]     = useState(null)
+  const [clientName, setClientName]         = useState('')
+  const [clientPhone, setClientPhone]       = useState('')
+  const [calendarMonth, setCalendarMonth]   = useState(new Date())
+  const [confirmed, setConfirmed]           = useState(false)
+  const [confirmedBooking, setConfirmedBooking] = useState(null)
+  // reminder state (post-confirm)
+  const [wantsReminder, setWantsReminder]   = useState(null) // null | true | false
+  const [reminderMinutes, setReminderMinutes] = useState(null)
 
   const combinedService = buildCombined(selectedServices)
 
@@ -75,11 +90,12 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
         setSelectedServices(preselectedService ? [preselectedService] : [])
         setSelectedDate(null)
         setSelectedTime(null)
-        setReminder('1h')
         setClientName('')
         setClientPhone('')
         setConfirmed(false)
-        setGoogleCalUrl('')
+        setConfirmedBooking(null)
+        setWantsReminder(null)
+        setReminderMinutes(null)
       }, 300)
     }
   }, [isOpen, preselectedService])
@@ -108,7 +124,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
     return true
   }
 
-  const availableSlots = TIME_SLOTS.filter((t) => {
+  const availableSlots = TIME_SLOTS.filter(t => {
     if (!selectedDate) return true
     return !isSlotBooked(selectedDate, t)
   })
@@ -134,19 +150,12 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
       time: selectedTime,
       clientName: clientName.trim(),
       clientPhone: clientPhone.trim(),
-      reminder,
       status: 'confirmed',
       createdAt: new Date().toISOString(),
     }
 
     await saveBooking(booking)
-
-    const reminderOption = REMINDER_OPTIONS.find((r) => r.id === reminder)
-    const hasPermission = await requestNotificationPermission()
-    if (hasPermission && reminderOption) {
-      scheduleNotification(booking, reminderOption.minutes)
-    }
-
+    setConfirmedBooking(booking)
     setConfirmed(true)
     toast.success('Agendamento confirmado!')
   }
@@ -158,30 +167,100 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
     return true
   }
 
-  if (confirmed) {
+  // ── Tela de confirmação ──
+  if (confirmed && confirmedBooking) {
     return (
       <ModalWrapper onClose={onClose}>
-        <div className="flex flex-col items-center text-center py-8 px-4 gap-6">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-[0_0_40px_rgba(255,106,0,0.4)] animate-pulse-glow">
-            <Check size={36} className="text-white" strokeWidth={3} />
+        <div className="flex flex-col items-center text-center py-6 px-2 gap-5">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-[0_0_40px_rgba(255,106,0,0.4)]">
+            <Check size={30} className="text-white" strokeWidth={3} />
           </div>
+
           <div>
-            <h3 className="text-2xl font-black mb-2">Agendamento Confirmado!</h3>
-            <p className="text-text-muted text-sm">
-              Até logo, <span className="text-text font-semibold">{clientName}</span>
-            </p>
+            <h3 className="text-xl font-black mb-1">Agendamento Confirmado!</h3>
+            <p className="text-text-muted text-sm">Até logo, <span className="text-text font-semibold">{clientName}</span></p>
           </div>
 
-          <div className="w-full bg-surface-2 rounded-2xl p-5 text-left space-y-3">
-            <BookingDetail icon={<Calendar size={16} />} label="Data" value={formatDatePtBR(selectedDate)} />
-            <BookingDetail icon={<Clock size={16} />} label="Horário" value={selectedTime} />
-            <BookingDetail icon={<User size={16} />} label="Serviço" value={combinedService?.name} />
-            <BookingDetail icon={<Bell size={16} />} label="Lembrete" value={REMINDER_OPTIONS.find(r => r.id === reminder)?.label} />
+          <div className="w-full bg-surface-2 rounded-2xl p-4 text-left space-y-2.5">
+            <BookingDetail icon={<Calendar size={14} />} label="Data"    value={formatDatePtBR(selectedDate)} />
+            <BookingDetail icon={<Clock size={14} />}    label="Horário" value={selectedTime} />
+            <BookingDetail icon={<User size={14} />}     label="Serviço" value={combinedService?.name} />
           </div>
 
-          <button onClick={onClose} className="btn-primary w-full">
-            Fechar
-          </button>
+          {/* Pergunta de lembrete */}
+          {wantsReminder === null && (
+            <div className="w-full space-y-3">
+              <p className="text-sm font-semibold flex items-center justify-center gap-2">
+                <Bell size={15} className="text-primary" />
+                Quer receber um lembrete?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setWantsReminder(true)}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary/15 border border-primary/40 text-primary hover:bg-primary/25 transition-all"
+                >
+                  Sim, quero!
+                </button>
+                <button
+                  onClick={() => setWantsReminder(false)}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-surface-2 border border-white/8 text-text-muted hover:text-text transition-all"
+                >
+                  Não, obrigado
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Seleção de tempo */}
+          {wantsReminder === true && (
+            <div className="w-full space-y-3">
+              <p className="text-sm font-semibold text-center">Avisar quanto tempo antes?</p>
+              <div className="grid grid-cols-5 gap-2">
+                {REMINDER_OPTS.map(opt => (
+                  <button
+                    key={opt.minutes}
+                    onClick={() => setReminderMinutes(opt.minutes)}
+                    className={`py-2.5 rounded-xl text-xs font-semibold text-center transition-all duration-200
+                      ${reminderMinutes === opt.minutes
+                        ? 'bg-primary/20 border border-primary/50 text-primary'
+                        : 'bg-surface-2 border border-white/8 text-text-muted hover:text-text'
+                      }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {reminderMinutes && (
+                <a
+                  href={buildGoogleCalUrl(confirmedBooking, reminderMinutes)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-primary-light text-white py-3 rounded-xl font-semibold text-sm hover:shadow-[0_0_20px_rgba(255,106,0,0.4)] transition-all"
+                >
+                  <Calendar size={15} />
+                  Adicionar ao Google Agenda
+                </a>
+              )}
+            </div>
+          )}
+
+          {wantsReminder === false && (
+            <button onClick={onClose} className="btn-primary w-full">
+              Fechar
+            </button>
+          )}
+
+          {wantsReminder === true && reminderMinutes && (
+            <button onClick={onClose} className="w-full py-2.5 rounded-xl text-sm text-text-muted hover:text-text transition-colors">
+              Fechar
+            </button>
+          )}
+
+          {wantsReminder === true && !reminderMinutes && (
+            <button onClick={onClose} className="w-full py-2.5 rounded-xl text-sm text-text-muted hover:text-text transition-colors">
+              Pular
+            </button>
+          )}
         </div>
       </ModalWrapper>
     )
@@ -189,53 +268,31 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
 
   return (
     <ModalWrapper onClose={onClose}>
-      {/* Step Content */}
       <div className="min-h-[320px]">
         {step === 1 && (
-          <StepService
-            services={SERVICES}
-            selected={selectedServices}
-            onToggle={toggleService}
-            combined={combinedService}
-          />
+          <StepService services={SERVICES} selected={selectedServices} onToggle={toggleService} combined={combinedService} />
         )}
         {step === 2 && (
           <StepDate
-            days={daysInView}
-            selected={selectedDate}
-            onSelect={setSelectedDate}
-            isAvailable={isDateAvailable}
-            calendarMonth={calendarMonth}
+            days={daysInView} selected={selectedDate} onSelect={setSelectedDate}
+            isAvailable={isDateAvailable} calendarMonth={calendarMonth}
             onPrevMonth={() => setCalendarMonth(m => new Date(m.getFullYear(), m.getMonth() - 1))}
             onNextMonth={() => setCalendarMonth(m => new Date(m.getFullYear(), m.getMonth() + 1))}
             today={today}
           />
         )}
         {step === 3 && (
-          <StepTime
-            slots={availableSlots}
-            allSlots={TIME_SLOTS}
-            selected={selectedTime}
-            onSelect={setSelectedTime}
-            selectedDate={selectedDate}
-          />
+          <StepTime slots={availableSlots} allSlots={TIME_SLOTS} selected={selectedTime} onSelect={setSelectedTime} selectedDate={selectedDate} />
         )}
         {step === 4 && (
           <StepConfirm
-            service={combinedService}
-            date={selectedDate}
-            time={selectedTime}
-            reminder={reminder}
-            onReminderChange={setReminder}
-            clientName={clientName}
-            clientPhone={clientPhone}
-            onNameChange={setClientName}
-            onPhoneChange={setClientPhone}
+            service={combinedService} date={selectedDate} time={selectedTime}
+            clientName={clientName} clientPhone={clientPhone}
+            onNameChange={setClientName} onPhoneChange={setClientPhone}
           />
         )}
       </div>
 
-      {/* Navigation */}
       <div className="flex gap-3 mt-8">
         {step > 1 && (
           <button
@@ -255,17 +312,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
               : 'bg-surface-2 text-text-muted cursor-not-allowed'
             }`}
         >
-          {step < 4 ? (
-            <>
-              Continuar
-              <ChevronRight size={16} />
-            </>
-          ) : (
-            <>
-              <Check size={16} />
-              Confirmar Agendamento
-            </>
-          )}
+          {step < 4 ? (<>Continuar <ChevronRight size={16} /></>) : (<><Check size={16} /> Confirmar Agendamento</>)}
         </button>
       </div>
     </ModalWrapper>
@@ -281,11 +328,10 @@ function ModalWrapper({ onClose, children }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-fade-in" />
       <div className="relative w-full sm:max-w-lg bg-surface border border-white/8 sm:rounded-3xl rounded-t-3xl shadow-[0_0_80px_rgba(0,0,0,0.8)] animate-slide-up max-h-[95vh] overflow-y-auto no-scrollbar">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-0">
           <img src={LOGO} alt="R9 Barbearia" className="h-10 w-auto object-contain" />
           <button
@@ -307,7 +353,7 @@ function StepService({ services, selected, onToggle, combined }) {
       <h3 className="text-base font-bold mb-1">Qual serviço?</h3>
       <p className="text-text-muted text-xs mb-4">Selecione um ou mais serviços</p>
       <div className="grid grid-cols-1 gap-2.5">
-        {services.map((s) => {
+        {services.map(s => {
           const isSelected = selected.some(sel => sel.id === s.id)
           return (
             <button
@@ -319,7 +365,7 @@ function StepService({ services, selected, onToggle, combined }) {
                   : 'border-white/8 bg-surface-2 hover:border-white/20 hover:bg-surface-3'
                 }`}
             >
-              <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center overflow-hidden flex-shrink-0 shadow-[0_0_10px_rgba(0,0,0,0.5)]">
+              <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center overflow-hidden flex-shrink-0">
                 <img src={LOGO} alt="R9" className="w-8 h-8 object-contain" />
               </div>
               <div className="flex-1 min-w-0">
@@ -327,20 +373,16 @@ function StepService({ services, selected, onToggle, combined }) {
                 <div className="text-text-muted text-xs">{s.durationDisplay}</div>
               </div>
               <div className="text-right flex-shrink-0">
-                <div className={`font-bold text-sm ${s.price ? 'text-primary' : 'text-text-muted'}`}>
-                  {s.priceDisplay}
-                </div>
+                <div className={`font-bold text-sm ${s.price ? 'text-primary' : 'text-text-muted'}`}>{s.priceDisplay}</div>
               </div>
-              <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200
-                ${isSelected ? 'bg-primary border-primary' : 'border-white/20 bg-transparent'}`}>
+              <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all
+                ${isSelected ? 'bg-primary border-primary' : 'border-white/20'}`}>
                 {isSelected && <Check size={11} className="text-white" strokeWidth={3} />}
               </div>
             </button>
           )
         })}
       </div>
-
-      {/* Combined total */}
       {combined && (
         <div className="mt-4 p-3 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-between">
           <div className="text-xs text-text-muted">
@@ -363,37 +405,24 @@ function StepDate({ days, selected, onSelect, isAvailable, calendarMonth, onPrev
   return (
     <div>
       <h3 className="text-base font-bold mb-4">Qual data?</h3>
-
       <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={onPrevMonth}
-          disabled={isPrevDisabled}
-          className="w-8 h-8 rounded-lg bg-surface-2 flex items-center justify-center disabled:opacity-30 hover:bg-surface-3 transition-colors"
-        >
+        <button onClick={onPrevMonth} disabled={isPrevDisabled} className="w-8 h-8 rounded-lg bg-surface-2 flex items-center justify-center disabled:opacity-30 hover:bg-surface-3 transition-colors">
           <ChevronLeft size={16} />
         </button>
         <span className="text-sm font-semibold capitalize">{monthName}</span>
-        <button
-          onClick={onNextMonth}
-          className="w-8 h-8 rounded-lg bg-surface-2 flex items-center justify-center hover:bg-surface-3 transition-colors"
-        >
+        <button onClick={onNextMonth} className="w-8 h-8 rounded-lg bg-surface-2 flex items-center justify-center hover:bg-surface-3 transition-colors">
           <ChevronRight size={16} />
         </button>
       </div>
-
       <div className="grid grid-cols-7 mb-2">
-        {WEEK_DAYS.map((d) => (
-          <div key={d} className="text-center text-text-muted text-xs font-medium py-1">{d}</div>
-        ))}
+        {WEEK_DAYS.map(d => <div key={d} className="text-center text-text-muted text-xs font-medium py-1">{d}</div>)}
       </div>
-
       <div className="grid grid-cols-7 gap-1">
         {days.map((date, i) => {
-          if (!date) return <div key={`empty-${i}`} />
+          if (!date) return <div key={`e-${i}`} />
           const available = isAvailable(date)
           const isSelected = selected && format(date, 'yyyy-MM-dd') === format(selected, 'yyyy-MM-dd')
           const isToday = format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
-
           return (
             <button
               key={date.toISOString()}
@@ -403,8 +432,7 @@ function StepDate({ days, selected, onSelect, isAvailable, calendarMonth, onPrev
                 ${isSelected
                   ? 'bg-gradient-to-br from-primary to-primary-light text-white shadow-[0_0_15px_rgba(255,106,0,0.4)] scale-105'
                   : available
-                    ? `bg-surface-2 hover:bg-surface-3 hover:border-primary/30 border border-transparent text-text
-                       ${isToday ? 'border-primary/40 text-primary' : ''}`
+                    ? `bg-surface-2 hover:bg-surface-3 border border-transparent text-text ${isToday ? 'border-primary/40 text-primary' : ''}`
                     : 'bg-surface/50 text-text-muted/30 cursor-not-allowed'
                 }`}
             >
@@ -413,11 +441,8 @@ function StepDate({ days, selected, onSelect, isAvailable, calendarMonth, onPrev
           )
         })}
       </div>
-
       {selected && (
-        <p className="text-center text-primary text-xs font-medium mt-4 capitalize">
-          {formatDatePtBR(selected)}
-        </p>
+        <p className="text-center text-primary text-xs font-medium mt-4 capitalize">{formatDatePtBR(selected)}</p>
       )}
     </div>
   )
@@ -427,13 +452,9 @@ function StepTime({ slots, allSlots, selected, onSelect, selectedDate }) {
   return (
     <div>
       <h3 className="text-base font-bold mb-1">Qual horário?</h3>
-      {selectedDate && (
-        <p className="text-text-muted text-xs mb-4 capitalize">
-          {formatDatePtBR(selectedDate)}
-        </p>
-      )}
+      {selectedDate && <p className="text-text-muted text-xs mb-4 capitalize">{formatDatePtBR(selectedDate)}</p>}
       <div className="grid grid-cols-4 gap-2">
-        {allSlots.map((time) => {
+        {allSlots.map(time => {
           const available = slots.includes(time)
           const isSelected = selected === time
           return (
@@ -445,7 +466,7 @@ function StepTime({ slots, allSlots, selected, onSelect, selectedDate }) {
                 ${isSelected
                   ? 'bg-gradient-to-br from-primary to-primary-light text-white shadow-[0_0_15px_rgba(255,106,0,0.4)]'
                   : available
-                    ? 'bg-surface-2 text-text hover:bg-surface-3 hover:border-primary/30 border border-transparent'
+                    ? 'bg-surface-2 text-text hover:bg-surface-3 border border-transparent'
                     : 'bg-surface/30 text-text-muted/30 cursor-not-allowed line-through'
                 }`}
             >
@@ -458,22 +479,21 @@ function StepTime({ slots, allSlots, selected, onSelect, selectedDate }) {
   )
 }
 
-function StepConfirm({ service, date, time, reminder, onReminderChange, clientName, clientPhone, onNameChange, onPhoneChange }) {
-  const formatPhone = (val) => {
+function StepConfirm({ service, date, time, clientName, clientPhone, onNameChange, onPhoneChange }) {
+  const formatPhone = val => {
     const nums = val.replace(/\D/g, '').slice(0, 11)
     if (nums.length <= 2) return nums
     if (nums.length <= 7) return `(${nums.slice(0,2)}) ${nums.slice(2)}`
-    if (nums.length <= 11) return `(${nums.slice(0,2)}) ${nums.slice(2,7)}-${nums.slice(7)}`
-    return val
+    return `(${nums.slice(0,2)}) ${nums.slice(2,7)}-${nums.slice(7)}`
   }
 
   return (
     <div className="space-y-5">
       <div className="bg-surface-2 rounded-2xl p-4 space-y-2.5">
         <h4 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-3">Resumo</h4>
-        <BookingDetail icon={<User size={14} />} label="Serviço" value={service?.name} />
-        <BookingDetail icon={<Calendar size={14} />} label="Data" value={date ? formatDatePtBR(date) : ''} />
-        <BookingDetail icon={<Clock size={14} />} label="Horário" value={time} />
+        <BookingDetail icon={<User size={14} />}     label="Serviço"  value={service?.name} />
+        <BookingDetail icon={<Calendar size={14} />} label="Data"     value={date ? formatDatePtBR(date) : ''} />
+        <BookingDetail icon={<Clock size={14} />}    label="Horário"  value={time} />
         <BookingDetail icon={<span className="text-xs font-bold text-primary">R$</span>} label="Valor" value={service?.priceDisplay} />
       </div>
 
@@ -481,45 +501,11 @@ function StepConfirm({ service, date, time, reminder, onReminderChange, clientNa
         <h4 className="text-xs font-bold text-text-muted uppercase tracking-wider">Seus dados</h4>
         <div className="relative">
           <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input
-            type="text"
-            placeholder="Seu nome"
-            value={clientName}
-            onChange={(e) => onNameChange(e.target.value)}
-            className="input-field pl-10"
-          />
+          <input type="text" placeholder="Seu nome" value={clientName} onChange={e => onNameChange(e.target.value)} className="input-field pl-10" />
         </div>
         <div className="relative">
           <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input
-            type="tel"
-            placeholder="(11) 99999-9999"
-            value={clientPhone}
-            onChange={(e) => onPhoneChange(formatPhone(e.target.value))}
-            className="input-field pl-10"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <h4 className="text-xs font-bold text-text-muted uppercase tracking-wider flex items-center gap-2">
-          <Bell size={13} />
-          Quando deseja ser lembrado?
-        </h4>
-        <div className="grid grid-cols-4 gap-2">
-          {REMINDER_OPTIONS.map((opt) => (
-            <button
-              key={opt.id}
-              onClick={() => onReminderChange(opt.id)}
-              className={`py-2.5 px-2 rounded-xl text-xs font-semibold text-center transition-all duration-200
-                ${reminder === opt.id
-                  ? 'bg-primary/20 border border-primary/50 text-primary'
-                  : 'bg-surface-2 border border-white/8 text-text-muted hover:border-white/20 hover:text-text'
-                }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+          <input type="tel" placeholder="(11) 99999-9999" value={clientPhone} onChange={e => onPhoneChange(formatPhone(e.target.value))} className="input-field pl-10" />
         </div>
       </div>
     </div>
