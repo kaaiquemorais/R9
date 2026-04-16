@@ -60,6 +60,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
   const [selectedDate, setSelectedDate]     = useState(null)
   const [selectedTime, setSelectedTime]     = useState(null)
   const [clientName, setClientName]         = useState('')
+  const [clientSurname, setClientSurname]   = useState('')
   const [clientPhone, setClientPhone]       = useState('')
   const [calendarMonth, setCalendarMonth]   = useState(new Date())
   const [confirmed, setConfirmed]           = useState(false)
@@ -93,6 +94,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
         setSelectedDate(null)
         setSelectedTime(null)
         setClientName('')
+        setClientSurname('')
         setClientPhone('')
         setConfirmed(false)
         setConfirmedBooking(null)
@@ -132,10 +134,11 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
   })
 
   const handleConfirm = async () => {
-    if (!clientName.trim() || !clientPhone.trim()) {
-      toast.error('Preencha seu nome e telefone')
+    if (!clientName.trim() || !clientSurname.trim() || !clientPhone.trim()) {
+      toast.error('Preencha nome, sobrenome e telefone')
       return
     }
+    const fullName = `${clientName.trim()} ${clientSurname.trim()}`
 
     // A — Lista negra
     const blocked = await checkPhoneBlocked(clientPhone.trim())
@@ -166,7 +169,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
       date: selectedDate,
       dateStr: format(selectedDate, 'yyyy-MM-dd'),
       time: selectedTime,
-      clientName: clientName.trim(),
+      clientName: fullName,
       clientPhone: clientPhone.trim(),
       status: 'pending',
       createdAt: new Date().toISOString(),
@@ -304,8 +307,8 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
         {step === 4 && (
           <StepConfirm
             service={combinedService} date={selectedDate} time={selectedTime}
-            clientName={clientName} clientPhone={clientPhone}
-            onNameChange={setClientName} onPhoneChange={setClientPhone}
+            clientName={clientName} clientSurname={clientSurname} clientPhone={clientPhone}
+            onNameChange={setClientName} onSurnameChange={setClientSurname} onPhoneChange={setClientPhone}
           />
         )}
       </div>
@@ -496,7 +499,7 @@ function StepTime({ slots, allSlots, selected, onSelect, selectedDate }) {
   )
 }
 
-function StepConfirm({ service, date, time, clientName, clientPhone, onNameChange, onPhoneChange }) {
+function StepConfirm({ service, date, time, clientName, clientSurname, clientPhone, onNameChange, onSurnameChange, onPhoneChange }) {
   const formatPhone = val => {
     const nums = val.replace(/\D/g, '').slice(0, 11)
     if (nums.length <= 2) return nums
@@ -516,9 +519,12 @@ function StepConfirm({ service, date, time, clientName, clientPhone, onNameChang
 
       <div className="space-y-3">
         <h4 className="text-xs font-bold text-text-muted uppercase tracking-wider">Seus dados</h4>
-        <div className="relative">
-          <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input type="text" placeholder="Seu nome" value={clientName} onChange={e => onNameChange(e.target.value)} className="input-field pl-10" />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="relative">
+            <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input type="text" placeholder="Nome" value={clientName} onChange={e => onNameChange(e.target.value)} className="input-field pl-10" />
+          </div>
+          <input type="text" placeholder="Sobrenome" value={clientSurname} onChange={e => onSurnameChange(e.target.value)} className="input-field" />
         </div>
         <div className="relative">
           <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
