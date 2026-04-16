@@ -445,16 +445,18 @@ export default function AdminDashboard({ isOpen, onClose }) {
               <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
                 {/* Revenue cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {[
-                    { label: 'Receita Total',  value: `R$ ${totalRevenue.toFixed(2).replace('.',',')}`, sub: `${activeList.length} ativos`, bg: T.accentBg, border: T.accentBorder, color: T.accent },
-                    { label: 'Receita Hoje',   value: `R$ ${todayRevenue.toFixed(2).replace('.',',')}`,  sub: `${todayList.filter(b=>b.status!=='cancelled').length} agendamento(s)`, bg: T.card, border: T.cardBorder, color: T.text },
-                    { label: 'Cancelados',  value: cancelledCount,  sub: 'total',   bg: T.redBg, border: T.redBorder, color: T.red },
+                    { label: 'Receita Total',  value: `R$ ${totalRevenue.toFixed(2).replace('.',',')}`, sub: `${activeList.length} agendamentos ativos`, bg: T.accentBg, border: T.accentBorder, color: T.accent },
+                    { label: 'Receita Hoje',   value: `R$ ${todayRevenue.toFixed(2).replace('.',',')}`, sub: `${todayList.filter(b=>b.status!=='cancelled').length} agendamento(s) hoje`, bg: T.card, border: T.cardBorder, color: T.text },
+                    { label: 'Cancelados',     value: cancelledCount, sub: 'total de cancelamentos', bg: T.redBg, border: T.redBorder, color: T.red },
                   ].map(c => (
-                    <div key={c.label} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 12, padding: '14px 12px', overflow: 'hidden', minWidth: 0 }}>
-                      <p style={{ ...sectionTitle, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.label}</p>
-                      <p style={{ fontSize: 22, fontWeight: 800, color: c.color, margin: '0 0 2px' }}>{c.value}</p>
-                      <p style={{ fontSize: 11, color: T.textMuted, margin: 0 }}>{c.sub}</p>
+                    <div key={c.label} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 12, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: c.color, margin: '0 0 2px' }}>{c.label}</p>
+                        <p style={{ fontSize: 11, color: T.textMuted, margin: 0 }}>{c.sub}</p>
+                      </div>
+                      <p style={{ fontSize: 26, fontWeight: 800, color: c.color, margin: 0, flexShrink: 0 }}>{c.value}</p>
                     </div>
                   ))}
                 </div>
