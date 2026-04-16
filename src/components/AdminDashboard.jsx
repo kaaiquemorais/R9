@@ -7,6 +7,7 @@ import {
   getBookedSlots, cancelBooking, updateBookingStatus, rescheduleBooking,
   getBlockedSlots, blockSlot, unblockSlot, saveBooking,
 } from '../utils/calendar'
+import { supabase } from '../lib/supabase'
 import { TIME_SLOTS, SERVICES } from '../data/services'
 import toast from 'react-hot-toast'
 
@@ -131,13 +132,29 @@ export default function AdminDashboard({ isOpen, onClose }) {
 
   const T = themes[theme]
 
+  // Real-time: load + subscribe whenever authenticated and open
+  useEffect(() => {
+    if (!auth || !isOpen) return
+    Promise.all([getBookedSlots(), getBlockedSlots()]).then(([b, bl]) => {
+      setBookings(b); setBlocked(bl)
+    })
+    const channel = supabase
+      .channel('admin-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+        getBookedSlots().then(setBookings)
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'blocked_slots' }, () => {
+        getBlockedSlots().then(setBlocked)
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [auth, isOpen])
+
   if (!isOpen) return null
 
   const login = async () => {
     if (pw === ADMIN_PASSWORD) {
       setAuth(true)
-      const [b, bl] = await Promise.all([getBookedSlots(), getBlockedSlots()])
-      setBookings(b); setBlocked(bl)
     } else { setErr(true); setPw(''); setTimeout(() => setErr(false), 1500) }
   }
 
