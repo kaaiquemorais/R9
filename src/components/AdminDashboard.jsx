@@ -392,13 +392,19 @@ export default function AdminDashboard({ isOpen, onClose }) {
                         {SERVICES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                        <input type="date" value={addForm.dateStr} onChange={e => setAddForm(f => ({ ...f, dateStr: e.target.value }))}
-                          style={{ width: '100%', boxSizing: 'border-box', background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '10px 12px', fontSize: 13, color: T.text, outline: 'none' }} />
-                        <select value={addForm.time} onChange={e => setAddForm(f => ({ ...f, time: e.target.value }))}
-                          style={{ width: '100%', boxSizing: 'border-box', background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '10px 12px', fontSize: 13, color: T.text, outline: 'none' }}>
-                          <option value="">Horário</option>
-                          {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <label style={{ fontSize: 11, fontWeight: 600, color: T.textSub, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Data</label>
+                          <input type="date" value={addForm.dateStr} onChange={e => setAddForm(f => ({ ...f, dateStr: e.target.value }))}
+                            style={{ width: '100%', boxSizing: 'border-box', background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '10px 12px', fontSize: 13, color: T.text, outline: 'none' }} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <label style={{ fontSize: 11, fontWeight: 600, color: T.textSub, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Horário</label>
+                          <select value={addForm.time} onChange={e => setAddForm(f => ({ ...f, time: e.target.value }))}
+                            style={{ width: '100%', boxSizing: 'border-box', background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '10px 12px', fontSize: 13, color: T.text, outline: 'none' }}>
+                            <option value="">Horário</option>
+                            {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
