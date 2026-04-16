@@ -78,6 +78,21 @@ const themes = {
   },
 }
 
+function buildCalendarUrl(b) {
+  try {
+    const [h, m] = (b.time || '09:00').split(':').map(Number)
+    const start = new Date(`${b.dateStr}T00:00:00`)
+    start.setHours(h, m, 0, 0)
+    const duration = b.service?.duration || 60
+    const end = new Date(start.getTime() + duration * 60000)
+    const fmt = d => d.toISOString().replace(/[-:]/g, '').slice(0, 15)
+    const text = encodeURIComponent(`R9 Barbearia – ${b.service?.name || 'Atendimento'}`)
+    const details = encodeURIComponent(`Cliente: ${b.clientName}\nTelefone: ${b.clientPhone}\nServiço: ${b.service?.name}\nValor: ${b.service?.priceDisplay}`)
+    const location = encodeURIComponent('Rua Fernando de Noronha, 100, Bragança Paulista/SP')
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${fmt(start)}/${fmt(end)}&details=${details}&location=${location}&sf=true&output=xml`
+  } catch { return null }
+}
+
 function exportCSV(bookings, label) {
   const rows = [['Nome', 'Telefone', 'Serviço', 'Preço', 'Data', 'Hora', 'Status']]
   bookings.forEach(b => rows.push([b.clientName||'', b.clientPhone||'', b.service?.name||'', b.service?.priceDisplay||'', b.dateStr||'', b.time||'', b.status||'confirmado']))
@@ -318,7 +333,13 @@ export default function AdminDashboard({ isOpen, onClose }) {
                     ? <div style={{ textAlign: 'center', padding: '60px 0', color: T.textMuted }}><Calendar size={32} color={T.cardBorder} style={{ margin: '0 auto 10px' }} /><p style={{ fontSize: 13, margin: 0 }}>Nenhum agendamento encontrado</p></div>
                     : sorted.map(b => (
                       <BookingCard key={b.id} b={b} T={T}
-                        onConfirm={async () => { await updateBookingStatus(b.id,'confirmed'); setBookings(await getBookedSlots()); toast.success('Confirmado!') }}
+                        onConfirm={async () => {
+                          await updateBookingStatus(b.id,'confirmed')
+                          setBookings(await getBookedSlots())
+                          toast.success('Confirmado!')
+                          const url = buildCalendarUrl(b)
+                          if (url) window.open(url, '_blank')
+                        }}
                         onCancel={async () => { await cancelBooking(b.id); setBookings(await getBookedSlots()); toast.success('Cancelado') }}
                         onReschedule={async t => { await rescheduleBooking(b.id,t); setBookings(await getBookedSlots()); setReId(null); toast.success('Reagendado!') }}
                         reMode={reId===b.id} onToggleRe={() => setReId(reId===b.id?null:b.id)}
