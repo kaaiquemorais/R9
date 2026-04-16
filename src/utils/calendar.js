@@ -129,6 +129,62 @@ export function isDayFullyBlocked(date) {
   return lsGetBlocked().some(b => b.date_str === dateStr && b.time === null)
 }
 
+/* ── Lista Negra (telefones) ── */
+function lsGetBlockedPhones()    { try { return JSON.parse(localStorage.getItem('r9_blocked_phones') || '[]') } catch { return [] } }
+function lsSetBlockedPhones(arr) { localStorage.setItem('r9_blocked_phones', JSON.stringify(arr)) }
+
+export async function getBlockedPhones() {
+  try {
+    const { data, error } = await supabase.from('blocked_phones').select('*')
+    if (error) throw error
+    lsSetBlockedPhones(data)
+    return data
+  } catch { return lsGetBlockedPhones() }
+}
+
+export async function blockPhone(phone, reason = '') {
+  const cleaned = phone.replace(/\D/g, '')
+  const row = { id: `phone-${cleaned}-${Date.now()}`, phone: cleaned, reason, created_at: new Date().toISOString() }
+  lsSetBlockedPhones([...lsGetBlockedPhones(), row])
+  const { error } = await supabase.from('blocked_phones').insert(row)
+  if (error) console.error('Block phone error:', error.message)
+}
+
+export async function unblockPhone(id) {
+  lsSetBlockedPhones(lsGetBlockedPhones().filter(p => p.id !== id))
+  const { error } = await supabase.from('blocked_phones').delete().eq('id', id)
+  if (error) console.error('Unblock phone error:', error.message)
+}
+
+export async function checkPhoneBlocked(phone) {
+  const cleaned = phone.replace(/\D/g, '')
+  try {
+    const { data, error } = await supabase.from('blocked_phones').select('id').eq('phone', cleaned).limit(1)
+    if (error) throw error
+    return data.length > 0
+  } catch {
+    return lsGetBlockedPhones().some(p => p.phone === cleaned)
+  }
+}
+
+export async function checkPhoneHasActiveBooking(phone) {
+  const cleaned = phone.replace(/\D/g, '')
+  try {
+    const { data, error } = await supabase
+      .from('bookings').select('id')
+      .ilike('client_phone', `%${cleaned}%`)
+      .in('status', ['pending', 'confirmed'])
+      .limit(1)
+    if (error) throw error
+    return data.length > 0
+  } catch {
+    return lsGet().some(b =>
+      b.clientPhone?.replace(/\D/g, '') === cleaned &&
+      ['pending', 'confirmed'].includes(b.status)
+    )
+  }
+}
+
 /* ── Google Calendar ── */
 export function generateGoogleCalendarUrl(booking) {
   const { service, date, time, clientName } = booking

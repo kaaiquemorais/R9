@@ -1,16 +1,15 @@
+functionsDirectory = "C:\\Users\\eduar\\OneDrive\\Documentos\\R9\\netlify\\functions"
+functionsDirectoryOrigin = "config"
 redirectsOrigin = "config"
 plugins = []
 headers = []
-
-[functions]
-
-[functions."*"]
 
 [build]
 publish = "C:\\Users\\eduar\\OneDrive\\Documentos\\R9\\dist"
 publishOrigin = "config"
 commandOrigin = "config"
 command = "npm run build"
+functions = "C:\\Users\\eduar\\OneDrive\\Documentos\\R9\\netlify\\functions"
 
 [build.environment]
 
@@ -25,6 +24,10 @@ command = "npm run build"
 [build.processing.js]
 
 [build.services]
+
+[functions]
+
+[functions."*"]
 
 [[redirects]]
 from = "/*"

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Bell } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Bell, AlertTriangle } from 'lucide-react'
 import { format, startOfDay, isBefore } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { SERVICES, TIME_SLOTS } from '../data/services'
@@ -7,6 +7,8 @@ import {
   formatDatePtBR,
   saveBooking,
   checkSlotTaken,
+  checkPhoneBlocked,
+  checkPhoneHasActiveBooking,
   isSlotBooked,
   isDayFullyBlocked,
 } from '../utils/calendar'
@@ -135,6 +137,21 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
       return
     }
 
+    // A — Lista negra
+    const blocked = await checkPhoneBlocked(clientPhone.trim())
+    if (blocked) {
+      toast.error('Este número não pode realizar agendamentos. Entre em contato com a barbearia.')
+      return
+    }
+
+    // B — 1 agendamento ativo por telefone
+    const hasActive = await checkPhoneHasActiveBooking(clientPhone.trim())
+    if (hasActive) {
+      toast.error('Este número já possui um agendamento ativo. Cancele o anterior para agendar novamente.')
+      return
+    }
+
+    // Verificação em tempo real de horário
     const taken = await checkSlotTaken(format(selectedDate, 'yyyy-MM-dd'), selectedTime)
     if (taken) {
       toast.error('Este horário acabou de ser reservado. Escolha outro horário.')
@@ -142,6 +159,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
       return
     }
 
+    // C — salva como pending (aguardando aprovação do barbeiro)
     const booking = {
       id: Date.now().toString(),
       service: combinedService,
@@ -150,14 +168,13 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
       time: selectedTime,
       clientName: clientName.trim(),
       clientPhone: clientPhone.trim(),
-      status: 'confirmed',
+      status: 'pending',
       createdAt: new Date().toISOString(),
     }
 
     await saveBooking(booking)
     setConfirmedBooking(booking)
     setConfirmed(true)
-    toast.success('Agendamento confirmado!')
   }
 
   const canProceed = () => {
@@ -167,18 +184,27 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
     return true
   }
 
-  // ── Tela de confirmação ──
+  // ── Tela de confirmação (pending) ──
   if (confirmed && confirmedBooking) {
+    const waText = encodeURIComponent(
+      `Olá! Gostaria de confirmar meu agendamento na R9 Barbearia:\n` +
+      `Nome: ${confirmedBooking.clientName}\n` +
+      `Serviço: ${confirmedBooking.service?.name}\n` +
+      `Data: ${formatDatePtBR(confirmedBooking.date)}\n` +
+      `Horário: ${confirmedBooking.time}`
+    )
+    const waUrl = `https://wa.me/5511996665871?text=${waText}`
+
     return (
       <ModalWrapper onClose={onClose}>
         <div className="flex flex-col items-center text-center py-6 px-2 gap-5">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-[0_0_40px_rgba(255,106,0,0.4)]">
-            <Check size={30} className="text-white" strokeWidth={3} />
+          <div className="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-500/40 flex items-center justify-center">
+            <Clock size={28} className="text-amber-400" />
           </div>
 
           <div>
-            <h3 className="text-xl font-black mb-1">Agendamento Confirmado!</h3>
-            <p className="text-text-muted text-sm">Até logo, <span className="text-text font-semibold">{clientName}</span></p>
+            <h3 className="text-xl font-black mb-1">Solicitação enviada!</h3>
+            <p className="text-text-muted text-sm">Aguardando confirmação do barbeiro, <span className="text-text font-semibold">{clientName}</span></p>
           </div>
 
           <div className="w-full bg-surface-2 rounded-2xl p-4 text-left space-y-2.5">
@@ -187,80 +213,61 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
             <BookingDetail icon={<User size={14} />}     label="Serviço" value={combinedService?.name} />
           </div>
 
-          {/* Pergunta de lembrete */}
+          {/* D — Confirmar via WhatsApp */}
+          <div className="w-full space-y-3">
+            <div className="w-full bg-amber-500/8 border border-amber-500/25 rounded-2xl px-4 py-3 text-left">
+              <p className="text-xs text-amber-400/90 leading-relaxed">
+                Para garantir seu horário, envie uma mensagem de confirmação pelo WhatsApp. O barbeiro irá aprovar em breve.
+              </p>
+            </div>
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 bg-[#25D366]/15 border border-[#25D366]/35 text-[#25D366] py-3 rounded-xl font-semibold text-sm hover:bg-[#25D366]/25 transition-all"
+            >
+              <Phone size={15} />
+              Confirmar pelo WhatsApp
+            </a>
+          </div>
+
+          {/* Lembrete no Google Agenda (após confirmação do barbeiro) */}
           {wantsReminder === null && (
             <div className="w-full space-y-3">
               <p className="text-sm font-semibold flex items-center justify-center gap-2">
                 <Bell size={15} className="text-primary" />
-                Quer receber um lembrete?
+                Quer um lembrete no Google Agenda?
               </p>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setWantsReminder(true)}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary/15 border border-primary/40 text-primary hover:bg-primary/25 transition-all"
-                >
-                  Sim, quero!
-                </button>
-                <button
-                  onClick={() => setWantsReminder(false)}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-surface-2 border border-white/8 text-text-muted hover:text-text transition-all"
-                >
-                  Não, obrigado
-                </button>
+                <button onClick={() => setWantsReminder(true)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary/15 border border-primary/40 text-primary hover:bg-primary/25 transition-all">Sim!</button>
+                <button onClick={() => setWantsReminder(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-surface-2 border border-white/8 text-text-muted hover:text-text transition-all">Não</button>
               </div>
             </div>
           )}
 
-          {/* Seleção de tempo */}
           {wantsReminder === true && (
             <div className="w-full space-y-3">
               <p className="text-sm font-semibold text-center">Avisar quanto tempo antes?</p>
               <div className="grid grid-cols-5 gap-2">
                 {REMINDER_OPTS.map(opt => (
-                  <button
-                    key={opt.minutes}
-                    onClick={() => setReminderMinutes(opt.minutes)}
-                    className={`py-2.5 rounded-xl text-xs font-semibold text-center transition-all duration-200
-                      ${reminderMinutes === opt.minutes
-                        ? 'bg-primary/20 border border-primary/50 text-primary'
-                        : 'bg-surface-2 border border-white/8 text-text-muted hover:text-text'
-                      }`}
-                  >
+                  <button key={opt.minutes} onClick={() => setReminderMinutes(opt.minutes)}
+                    className={`py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${reminderMinutes === opt.minutes ? 'bg-primary/20 border border-primary/50 text-primary' : 'bg-surface-2 border border-white/8 text-text-muted hover:text-text'}`}>
                     {opt.label}
                   </button>
                 ))}
               </div>
               {reminderMinutes && (
-                <a
-                  href={buildGoogleCalUrl(confirmedBooking, reminderMinutes)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-primary-light text-white py-3 rounded-xl font-semibold text-sm hover:shadow-[0_0_20px_rgba(255,106,0,0.4)] transition-all"
-                >
-                  <Calendar size={15} />
-                  Adicionar ao Google Agenda
+                <a href={buildGoogleCalUrl(confirmedBooking, reminderMinutes)} target="_blank" rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-primary-light text-white py-3 rounded-xl font-semibold text-sm hover:shadow-[0_0_20px_rgba(255,106,0,0.4)] transition-all">
+                  <Calendar size={15} /> Adicionar ao Google Agenda
                 </a>
               )}
             </div>
           )}
 
-          {wantsReminder === false && (
-            <button onClick={onClose} className="btn-primary w-full">
-              Fechar
-            </button>
-          )}
-
-          {wantsReminder === true && reminderMinutes && (
-            <button onClick={onClose} className="w-full py-2.5 rounded-xl text-sm text-text-muted hover:text-text transition-colors">
-              Fechar
-            </button>
-          )}
-
-          {wantsReminder === true && !reminderMinutes && (
-            <button onClick={onClose} className="w-full py-2.5 rounded-xl text-sm text-text-muted hover:text-text transition-colors">
-              Pular
-            </button>
-          )}
+          {wantsReminder === false && <button onClick={onClose} className="btn-primary w-full">Fechar</button>}
+          {wantsReminder === true && reminderMinutes && <button onClick={onClose} className="w-full py-2.5 rounded-xl text-sm text-text-muted hover:text-text transition-colors">Fechar</button>}
+          {wantsReminder === true && !reminderMinutes && <button onClick={onClose} className="w-full py-2.5 rounded-xl text-sm text-text-muted hover:text-text transition-colors">Pular</button>}
 
           {/* Aviso de cancelamento */}
           <div className="w-full bg-white/3 border border-white/8 rounded-2xl px-4 py-3 text-left">

@@ -6,6 +6,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import {
   getBookedSlots, cancelBooking, updateBookingStatus, rescheduleBooking,
   getBlockedSlots, blockSlot, unblockSlot, saveBooking,
+  getBlockedPhones, blockPhone, unblockPhone,
 } from '../utils/calendar'
 import { supabase } from '../lib/supabase'
 import { TIME_SLOTS, SERVICES } from '../data/services'
@@ -133,13 +134,18 @@ export default function AdminDashboard({ isOpen, onClose }) {
   // Popup Google Calendar após confirmar
   const [calPopup, setCalPopup] = useState(null)
 
+  // Lista negra
+  const [blockedPhones, setBlockedPhones] = useState([])
+  const [blockPhoneInput, setBlockPhoneInput] = useState('')
+  const [blockPhoneReason, setBlockPhoneReason] = useState('')
+
   const T = themes[theme]
 
   // Real-time: load + subscribe whenever authenticated and open
   useEffect(() => {
     if (!auth || !isOpen) return
-    Promise.all([getBookedSlots(), getBlockedSlots()]).then(([b, bl]) => {
-      setBookings(b); setBlocked(bl)
+    Promise.all([getBookedSlots(), getBlockedSlots(), getBlockedPhones()]).then(([b, bl, bp]) => {
+      setBookings(b); setBlocked(bl); setBlockedPhones(bp)
     })
     const channel = supabase
       .channel('admin-rt')
@@ -162,8 +168,22 @@ export default function AdminDashboard({ isOpen, onClose }) {
   }
 
   const refresh = async () => {
-    const [b, bl] = await Promise.all([getBookedSlots(), getBlockedSlots()])
-    setBookings(b); setBlocked(bl); toast.success('Atualizado!')
+    const [b, bl, bp] = await Promise.all([getBookedSlots(), getBlockedSlots(), getBlockedPhones()])
+    setBookings(b); setBlocked(bl); setBlockedPhones(bp); toast.success('Atualizado!')
+  }
+
+  const handleBlockPhone = async () => {
+    if (!blockPhoneInput.trim()) { toast.error('Informe o número'); return }
+    await blockPhone(blockPhoneInput.trim(), blockPhoneReason.trim())
+    setBlockedPhones(await getBlockedPhones())
+    setBlockPhoneInput(''); setBlockPhoneReason('')
+    toast.success('Número bloqueado!')
+  }
+
+  const handleUnblockPhone = async (id) => {
+    await unblockPhone(id)
+    setBlockedPhones(await getBlockedPhones())
+    toast.success('Número desbloqueado!')
   }
 
   /* ── Computed ── */
@@ -175,6 +195,7 @@ export default function AdminDashboard({ isOpen, onClose }) {
   const freeTodaySlots = TIME_SLOTS.filter(t => !todayList.map(b => b.time).includes(t))
 
   const yesterdayList = bookings.filter(b => { try { return isYesterday(parseISO(b.dateStr)) } catch { return false } })
+  const pendingList   = bookings.filter(b => b.status === 'pending')
 
   const chartData = Array.from({ length: 7 }, (_, i) => {
     const d = subDays(new Date(), 6 - i)
@@ -191,6 +212,7 @@ export default function AdminDashboard({ isOpen, onClose }) {
     try {
       if (filter === 'today')     return isToday(parseISO(b.dateStr))
       if (filter === 'yesterday') return isYesterday(parseISO(b.dateStr))
+      if (filter === 'pending')   return b.status === 'pending'
       if (filter === 'active')    return b.status !== 'cancelled'
       if (filter === 'cancelled') return b.status === 'cancelled'
       if (filter === 'range' && dateFrom && dateTo)
@@ -369,9 +391,17 @@ export default function AdminDashboard({ isOpen, onClose }) {
 
                 {/* Filters + botão novo */}
                 <div style={{ display: 'flex', gap: 6, padding: '0 20px 14px', flexShrink: 0, flexWrap: 'wrap', alignItems: 'center' }}>
-                  {[['today','Hoje'],['yesterday','Ontem'],['active','Ativos'],['cancelled','Cancelados'],['all','Todos']].map(([f,l]) => (
+                    {[['today','Hoje'],['yesterday','Ontem'],['active','Ativos'],['cancelled','Cancelados'],['all','Todos']].map(([f,l]) => (
                     <button key={f} onClick={() => setFilter(f)} style={pill(filter===f)}>{l}</button>
                   ))}
+                  <button onClick={() => setFilter('pending')} style={{ ...pill(filter==='pending'), position: 'relative', paddingRight: pendingList.length > 0 ? 22 : undefined }}>
+                    Pendentes
+                    {pendingList.length > 0 && (
+                      <span style={{ position: 'absolute', top: -6, right: -6, background: T.accent, color: '#fff', fontSize: 10, fontWeight: 800, borderRadius: 99, minWidth: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>
+                        {pendingList.length}
+                      </span>
+                    )}
+                  </button>
                   <button onClick={() => setAddOpen(o => !o)} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', background: T.accentBg, border: `1px solid ${T.accentBorder}`, color: T.accent }}>
                     Agendar horário
                   </button>
@@ -629,6 +659,50 @@ export default function AdminDashboard({ isOpen, onClose }) {
                             </div>
                           )
                         })}
+                      </div>
+                    )}
+                </div>
+
+                {/* Lista Negra */}
+                <div style={card({ padding: 16 })}>
+                  <p style={sectionTitle}>Lista negra — números bloqueados</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                    <input
+                      placeholder="Telefone (ex: 11999998888)"
+                      value={blockPhoneInput}
+                      onChange={e => setBlockPhoneInput(e.target.value)}
+                      style={{ background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '9px 12px', fontSize: 13, color: T.text, outline: 'none', width: '100%', boxSizing: 'border-box' }}
+                    />
+                    <input
+                      placeholder="Motivo (opcional)"
+                      value={blockPhoneReason}
+                      onChange={e => setBlockPhoneReason(e.target.value)}
+                      style={{ background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: '9px 12px', fontSize: 13, color: T.text, outline: 'none', width: '100%', boxSizing: 'border-box' }}
+                    />
+                    <button onClick={handleBlockPhone} style={{ width: '100%', padding: '10px 0', fontSize: 13, fontWeight: 700, background: T.redBg, border: `1px solid ${T.redBorder}`, color: T.red, borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      <XCircle size={14} /> Adicionar à lista negra
+                    </button>
+                  </div>
+                  {blockedPhones.length === 0
+                    ? <p style={{ fontSize: 13, color: T.textMuted, margin: 0 }}>Nenhum número bloqueado</p>
+                    : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {blockedPhones.map(p => (
+                          <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: T.inputBg, border: `1px solid ${T.redBorder}`, borderRadius: 10 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <div style={{ width: 32, height: 32, borderRadius: 8, background: T.redBg, border: `1px solid ${T.redBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <XCircle size={13} color={T.red} />
+                              </div>
+                              <div>
+                                <p style={{ fontSize: 13, fontWeight: 700, color: T.text, margin: 0 }}>{p.phone}</p>
+                                {p.reason && <p style={{ fontSize: 11, color: T.textSub, margin: 0 }}>{p.reason}</p>}
+                              </div>
+                            </div>
+                            <button onClick={() => handleUnblockPhone(p.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', background: 'transparent', border: `1px solid ${T.cardBorder}`, borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, color: T.textSub }}>
+                              <Unlock size={12} /> Remover
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     )}
                 </div>
