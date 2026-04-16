@@ -336,9 +336,23 @@ export default function AdminDashboard({ isOpen, onClose }) {
                         onConfirm={async () => {
                           await updateBookingStatus(b.id,'confirmed')
                           setBookings(await getBookedSlots())
-                          toast.success('Confirmado!')
                           const url = buildCalendarUrl(b)
-                          if (url) window.open(url, '_blank')
+                          toast((t) => (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              <span style={{ fontWeight: 700, fontSize: 13 }}>✅ Agendamento confirmado!</span>
+                              {url && (
+                                <a href={url} target="_blank" rel="noopener noreferrer"
+                                  onClick={() => toast.dismiss(t.id)}
+                                  style={{ fontSize: 12, color: '#FF6A00', fontWeight: 600, textDecoration: 'none' }}>
+                                  📅 Adicionar ao Google Agenda →
+                                </a>
+                              )}
+                              <button onClick={() => toast.dismiss(t.id)}
+                                style={{ fontSize: 11, color: '#888', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}>
+                                Agora não
+                              </button>
+                            </div>
+                          ), { duration: 8000 })
                         }}
                         onCancel={async () => { await cancelBooking(b.id); setBookings(await getBookedSlots()); toast.success('Cancelado') }}
                         onReschedule={async t => { await rescheduleBooking(b.id,t); setBookings(await getBookedSlots()); setReId(null); toast.success('Reagendado!') }}
@@ -370,10 +384,10 @@ export default function AdminDashboard({ isOpen, onClose }) {
                   {[
                     { label: 'Receita Total',  value: `R$ ${totalRevenue.toFixed(2).replace('.',',')}`, sub: `${activeList.length} ativos`, bg: T.accentBg, border: T.accentBorder, color: T.accent },
                     { label: 'Receita Hoje',   value: `R$ ${todayRevenue.toFixed(2).replace('.',',')}`,  sub: `${todayList.filter(b=>b.status!=='cancelled').length} hoje`, bg: T.card, border: T.cardBorder, color: T.text },
-                    { label: 'Cancelamentos',  value: cancelledCount,  sub: 'total',   bg: T.redBg, border: T.redBorder, color: T.red },
+                    { label: 'Cancelados',  value: cancelledCount,  sub: 'total',   bg: T.redBg, border: T.redBorder, color: T.red },
                   ].map(c => (
-                    <div key={c.label} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 12, padding: '14px 16px' }}>
-                      <p style={{ ...sectionTitle, marginBottom: 6 }}>{c.label}</p>
+                    <div key={c.label} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 12, padding: '14px 12px', overflow: 'hidden', minWidth: 0 }}>
+                      <p style={{ ...sectionTitle, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.label}</p>
                       <p style={{ fontSize: 22, fontWeight: 800, color: c.color, margin: '0 0 2px' }}>{c.value}</p>
                       <p style={{ fontSize: 11, color: T.textMuted, margin: 0 }}>{c.sub}</p>
                     </div>
