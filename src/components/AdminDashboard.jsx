@@ -302,11 +302,9 @@ export default function AdminDashboard({ isOpen, onClose }) {
   const sectionTitle = { fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: T.bg === '#0d0d0d' ? 'rgba(0,0,0,0.8)' : 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}
-      onClick={onClose}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', background: T.bg }}>
 
-      <div style={{ position: 'relative', width: '100%', maxWidth: 700, maxHeight: '94vh', display: 'flex', flexDirection: 'column', background: T.panel, borderRadius: 20, border: T.panelBorder, boxShadow: T.shadow, overflow: 'hidden' }}
-        onClick={e => e.stopPropagation()}>
+      <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: T.panel, overflow: 'hidden' }}>
 
         {/* Top accent */}
         {T.topGlow && <div style={{ height: 2, background: 'linear-gradient(90deg, transparent, #FF6A00, transparent)', flexShrink: 0 }} />}
