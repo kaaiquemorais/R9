@@ -189,15 +189,6 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
 
   // ── Tela de confirmação (pending) ──
   if (confirmed && confirmedBooking) {
-    const waText = encodeURIComponent(
-      `Olá! Gostaria de confirmar meu agendamento na R9 Barbearia:\n` +
-      `Nome: ${confirmedBooking.clientName}\n` +
-      `Serviço: ${confirmedBooking.service?.name}\n` +
-      `Data: ${formatDatePtBR(confirmedBooking.date)}\n` +
-      `Horário: ${confirmedBooking.time}`
-    )
-    const waUrl = `https://wa.me/5511996665871?text=${waText}`
-
     return (
       <ModalWrapper onClose={onClose}>
         <div className="flex flex-col items-center text-center py-6 px-2 gap-5">
@@ -214,24 +205,6 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
             <BookingDetail icon={<Calendar size={14} />} label="Data"    value={formatDatePtBR(selectedDate)} />
             <BookingDetail icon={<Clock size={14} />}    label="Horário" value={selectedTime} />
             <BookingDetail icon={<User size={14} />}     label="Serviço" value={combinedService?.name} />
-          </div>
-
-          {/* D — Confirmar via WhatsApp */}
-          <div className="w-full space-y-3">
-            <div className="w-full bg-amber-500/8 border border-amber-500/25 rounded-2xl px-4 py-3 text-left">
-              <p className="text-xs text-amber-400/90 leading-relaxed">
-                Para garantir seu horário, envie uma mensagem de confirmação pelo WhatsApp. O barbeiro irá aprovar em breve.
-              </p>
-            </div>
-            <a
-              href={waUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 bg-[#25D366]/15 border border-[#25D366]/35 text-[#25D366] py-3 rounded-xl font-semibold text-sm hover:bg-[#25D366]/25 transition-all"
-            >
-              <Phone size={15} />
-              Confirmar pelo WhatsApp
-            </a>
           </div>
 
           {/* Lembrete no Google Agenda (após confirmação do barbeiro) */}
