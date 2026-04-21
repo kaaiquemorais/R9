@@ -7,6 +7,7 @@ import {
   getBookedSlots, cancelBooking, updateBookingStatus, rescheduleBooking,
   getBlockedSlots, blockSlot, unblockSlot, saveBooking,
   getBlockedPhones, blockPhone, unblockPhone,
+  getClientScores, recordNoShow, resetClientScore, SCORE_BLOCKED,
 } from '../utils/calendar'
 import { supabase } from '../lib/supabase'
 import { TIME_SLOTS, SERVICES } from '../data/services'
@@ -139,13 +140,16 @@ export default function AdminDashboard({ isOpen, onClose }) {
   const [blockPhoneInput, setBlockPhoneInput] = useState('')
   const [blockPhoneReason, setBlockPhoneReason] = useState('')
 
+  // Reputação
+  const [clientScores, setClientScores] = useState([])
+
   const T = themes[theme]
 
   // Real-time: load + subscribe whenever authenticated and open
   useEffect(() => {
     if (!auth || !isOpen) return
-    Promise.all([getBookedSlots(), getBlockedSlots(), getBlockedPhones()]).then(([b, bl, bp]) => {
-      setBookings(b); setBlocked(bl); setBlockedPhones(bp)
+    Promise.all([getBookedSlots(), getBlockedSlots(), getBlockedPhones(), getClientScores()]).then(([b, bl, bp, cs]) => {
+      setBookings(b); setBlocked(bl); setBlockedPhones(bp); setClientScores(cs)
     })
     const channel = supabase
       .channel('admin-rt')
@@ -168,8 +172,32 @@ export default function AdminDashboard({ isOpen, onClose }) {
   }
 
   const refresh = async () => {
-    const [b, bl, bp] = await Promise.all([getBookedSlots(), getBlockedSlots(), getBlockedPhones()])
-    setBookings(b); setBlocked(bl); setBlockedPhones(bp); toast.success('Atualizado!')
+    const [b, bl, bp, cs] = await Promise.all([getBookedSlots(), getBlockedSlots(), getBlockedPhones(), getClientScores()])
+    setBookings(b); setBlocked(bl); setBlockedPhones(bp); setClientScores(cs); toast.success('Atualizado!')
+  }
+
+  const getScore = (phone) => {
+    const cleaned = phone?.replace(/\D/g, '') || ''
+    return clientScores.find(s => s.phone === cleaned)?.score ?? 100
+  }
+
+  const handleNoShow = async (b) => {
+    const newScore = await recordNoShow(b.clientPhone)
+    await cancelBooking(b.id)
+    setBookings(await getBookedSlots())
+    setClientScores(await getClientScores())
+    const blocked = newScore < SCORE_BLOCKED
+    toast.success(
+      blocked
+        ? `Falta registrada. Score: ${newScore}/100 — cliente bloqueado automaticamente.`
+        : `Falta registrada. Score do cliente: ${newScore}/100`
+    )
+  }
+
+  const handleResetScore = async (phone) => {
+    await resetClientScore(phone)
+    setClientScores(await getClientScores())
+    toast.success('Reputação restaurada!')
   }
 
   const handleBlockPhone = async () => {
@@ -452,12 +480,14 @@ export default function AdminDashboard({ isOpen, onClose }) {
                     ? <div style={{ textAlign: 'center', padding: '60px 0', color: T.textMuted }}><Calendar size={32} color={T.cardBorder} style={{ margin: '0 auto 10px' }} /><p style={{ fontSize: 13, margin: 0 }}>Nenhum agendamento encontrado</p></div>
                     : sorted.map(b => (
                       <BookingCard key={b.id} b={b} T={T}
+                        score={getScore(b.clientPhone)}
                         onConfirm={async () => {
                           await updateBookingStatus(b.id, 'confirmed')
                           setBookings(await getBookedSlots())
                           setCalPopup(b)
                         }}
                         onCancel={async () => { await cancelBooking(b.id); setBookings(await getBookedSlots()); toast.success('Cancelado') }}
+                        onNoShow={() => handleNoShow(b)}
                         onReschedule={async t => { await rescheduleBooking(b.id,t); setBookings(await getBookedSlots()); setReId(null); toast.success('Reagendado!') }}
                         reMode={reId===b.id} onToggleRe={() => setReId(reId===b.id?null:b.id)}
                       />
@@ -704,6 +734,30 @@ export default function AdminDashboard({ isOpen, onClose }) {
                       </div>
                     )}
                 </div>
+                {/* Reputação */}
+                {clientScores.length > 0 && (
+                  <div style={card({ padding: 16 })}>
+                    <p style={sectionTitle}>Reputação dos clientes</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {[...clientScores].sort((a, b) => a.score - b.score).map(cs => (
+                        <div key={cs.phone} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: T.inputBg, border: `1px solid ${cs.score < 40 ? T.redBorder : cs.score < 70 ? T.amberBorder : T.cardBorder}`, borderRadius: 10 }}>
+                          <div>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: T.text, margin: '0 0 2px' }}>{cs.phone}</p>
+                            <p style={{ fontSize: 11, color: T.textSub, margin: 0 }}>
+                              Score: <strong style={{ color: cs.score < 40 ? T.red : cs.score < 70 ? T.amber : T.green }}>{cs.score}/100</strong>
+                              {' · '}{cs.no_shows} falta(s)
+                            </p>
+                          </div>
+                          {cs.score < 100 && (
+                            <button onClick={() => handleResetScore(cs.phone)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', background: 'transparent', border: `1px solid ${T.cardBorder}`, borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, color: T.textSub }}>
+                              <RefreshCw size={12} /> Restaurar
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </>
@@ -755,24 +809,43 @@ export default function AdminDashboard({ isOpen, onClose }) {
   )
 }
 
-function BookingCard({ b, T, onConfirm, onCancel, onReschedule, reMode, onToggleRe }) {
+function ScoreBadge({ score, T }) {
+  const color  = score >= 70 ? T.green  : score >= 40 ? T.amber  : T.red
+  const bg     = score >= 70 ? T.greenBg : score >= 40 ? T.amberBg : T.redBg
+  const border = score >= 70 ? T.greenBorder : score >= 40 ? T.amberBorder : T.redBorder
+  const label  = score >= 70 ? 'Boa' : score >= 40 ? 'Alerta' : 'Bloqueado'
+  return (
+    <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 99, background: bg, border: `1px solid ${border}`, color, whiteSpace: 'nowrap' }}>
+      ★ {score} · {label}
+    </span>
+  )
+}
+
+function BookingCard({ b, T, score = 100, onConfirm, onCancel, onNoShow, onReschedule, reMode, onToggleRe }) {
   const cancelled = b.status === 'cancelled'
+  const pending   = b.status === 'pending'
   let dateLabel = ''
   try { const d = parseISO(b.dateStr); dateLabel = isToday(d) ? 'Hoje' : format(d, "dd 'de' MMM", { locale: ptBR }) } catch {}
 
+  const borderColor = cancelled ? T.cardBorder : pending ? T.amberBorder : T.accentBorder
+
   return (
-    <div style={{ background: T.card, border: `1px solid ${cancelled ? T.cardBorder : T.accentBorder}`, borderRadius: 12, padding: 14, opacity: cancelled ? 0.5 : 1 }}>
+    <div style={{ background: T.card, border: `1px solid ${borderColor}`, borderRadius: 12, padding: 14, opacity: cancelled ? 0.5 : 1 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: T.accentBg, border: `1px solid ${T.accentBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <User size={15} color={T.accent} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          <div style={{ width: 38, height: 38, borderRadius: 10, background: pending ? T.amberBg : T.accentBg, border: `1px solid ${pending ? T.amberBorder : T.accentBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <User size={15} color={pending ? T.amber : T.accent} />
           </div>
-          <div>
-            <p style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: 0 }}>{b.clientName}</p>
-            <p style={{ fontSize: 12, color: T.textSub, margin: 0 }}>{b.clientPhone}</p>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: '0 0 2px' }}>{b.clientName}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <p style={{ fontSize: 12, color: T.textSub, margin: 0 }}>{b.clientPhone}</p>
+              <ScoreBadge score={score} T={T} />
+              {pending && <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 99, background: T.amberBg, border: `1px solid ${T.amberBorder}`, color: T.amber }}>Pendente</span>}
+            </div>
           </div>
         </div>
-        <div style={{ textAlign: 'right' }}>
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <p style={{ fontSize: 15, fontWeight: 800, color: T.accent, margin: 0 }}>{b.time}</p>
           <p style={{ fontSize: 11, color: T.textMuted, margin: 0 }}>{dateLabel}</p>
         </div>
@@ -787,16 +860,21 @@ function BookingCard({ b, T, onConfirm, onCancel, onReschedule, reMode, onToggle
       </div>
 
       {!cancelled && (
-        <div style={{ display: 'flex', gap: 6 }}>
-          {[
-            { l: 'Confirmar', fn: onConfirm,   color: T.green,  bg: T.greenBg,  border: T.greenBorder,  Icon: Check },
-            { l: 'Reagendar', fn: onToggleRe,  color: T.amber,  bg: T.amberBg,  border: T.amberBorder,  Icon: RefreshCw },
-            { l: 'Cancelar',  fn: onCancel,    color: T.red,    bg: T.redBg,    border: T.redBorder,    Icon: XCircle },
-          ].map(({ l, fn, color, bg, border, Icon }) => (
-            <button key={l} onClick={fn} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '7px 0', background: bg, border: `1px solid ${border}`, color, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-              <Icon size={12} />{l}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {b.status !== 'confirmed' && (
+            <button onClick={onConfirm} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '7px 0', background: T.greenBg, border: `1px solid ${T.greenBorder}`, color: T.green, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+              <Check size={12} />Confirmar
             </button>
-          ))}
+          )}
+          <button onClick={onToggleRe} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '7px 0', background: T.amberBg, border: `1px solid ${T.amberBorder}`, color: T.amber, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+            <RefreshCw size={12} />Reagendar
+          </button>
+          <button onClick={onNoShow} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '7px 0', background: T.redBg, border: `1px solid ${T.redBorder}`, color: T.red, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+            <XCircle size={12} />Não veio
+          </button>
+          <button onClick={onCancel} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '7px 0', background: T.inputBg, border: `1px solid ${T.inputBorder}`, color: T.textSub, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+            <XCircle size={12} />Cancelar
+          </button>
         </div>
       )}
 

@@ -167,6 +167,8 @@ export async function checkPhoneBlocked(phone) {
   }
 }
 
+const MAX_ACTIVE_BOOKINGS = 2 // máximo de agendamentos ativos por telefone
+
 export async function checkPhoneHasActiveBooking(phone) {
   const cleaned = phone.replace(/\D/g, '')
   try {
@@ -174,16 +176,66 @@ export async function checkPhoneHasActiveBooking(phone) {
       .from('bookings').select('id')
       .ilike('client_phone', `%${cleaned}%`)
       .in('status', ['pending', 'confirmed'])
-      .limit(1)
     if (error) throw error
-    return data.length > 0
+    return data.length >= MAX_ACTIVE_BOOKINGS
   } catch {
-    return lsGet().some(b =>
+    const count = lsGet().filter(b =>
       b.clientPhone?.replace(/\D/g, '') === cleaned &&
       ['pending', 'confirmed'].includes(b.status)
-    )
+    ).length
+    return count >= MAX_ACTIVE_BOOKINGS
   }
 }
+
+/* ── Reputação de clientes ── */
+const SCORE_DEFAULT   = 100
+const SCORE_NO_SHOW   = -30   // pontos perdidos por falta sem aviso
+const SCORE_BLOCKED   = 40    // score abaixo disso bloqueia novos agendamentos
+
+export async function getClientScores() {
+  try {
+    const { data, error } = await supabase.from('client_scores').select('*')
+    if (error) throw error
+    return data || []
+  } catch { return [] }
+}
+
+export async function getClientScore(phone) {
+  const cleaned = phone.replace(/\D/g, '')
+  try {
+    const { data } = await supabase.from('client_scores').select('score,no_shows').eq('phone', cleaned).single()
+    return data || { score: SCORE_DEFAULT, no_shows: 0 }
+  } catch { return { score: SCORE_DEFAULT, no_shows: 0 } }
+}
+
+export async function checkPhoneScore(phone) {
+  const { score } = await getClientScore(phone)
+  return score
+}
+
+export async function recordNoShow(phone) {
+  const cleaned = phone.replace(/\D/g, '')
+  const current = await getClientScore(cleaned)
+  const newScore    = Math.max(0, current.score + SCORE_NO_SHOW)
+  const newNoShows  = (current.no_shows || 0) + 1
+  const { error } = await supabase.from('client_scores').upsert({
+    phone: cleaned, score: newScore, no_shows: newNoShows,
+    updated_at: new Date().toISOString(),
+  })
+  if (error) console.error('Record no-show error:', error.message)
+  return newScore
+}
+
+export async function resetClientScore(phone) {
+  const cleaned = phone.replace(/\D/g, '')
+  const { error } = await supabase.from('client_scores').upsert({
+    phone: cleaned, score: SCORE_DEFAULT, no_shows: 0,
+    updated_at: new Date().toISOString(),
+  })
+  if (error) console.error('Reset score error:', error.message)
+}
+
+export { SCORE_DEFAULT, SCORE_NO_SHOW, SCORE_BLOCKED }
 
 /* ── Google Calendar ── */
 export function generateGoogleCalendarUrl(booking) {

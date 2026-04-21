@@ -9,6 +9,7 @@ import {
   checkSlotTaken,
   checkPhoneBlocked,
   checkPhoneHasActiveBooking,
+  checkPhoneScore,
   isSlotBooked,
   isDayFullyBlocked,
 } from '../utils/calendar'
@@ -147,10 +148,17 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
       return
     }
 
-    // B — 1 agendamento ativo por telefone
+    // Reputação — score baixo bloqueia
+    const score = await checkPhoneScore(clientPhone.trim())
+    if (score < 40) {
+      toast.error('Não é possível agendar com este número. Entre em contato com a barbearia.')
+      return
+    }
+
+    // B — limite de agendamentos ativos por telefone
     const hasActive = await checkPhoneHasActiveBooking(clientPhone.trim())
     if (hasActive) {
-      toast.error('Este número já possui um agendamento ativo. Cancele o anterior para agendar novamente.')
+      toast.error('Este número já atingiu o limite de agendamentos ativos. Cancele um anterior para agendar novamente.')
       return
     }
 
