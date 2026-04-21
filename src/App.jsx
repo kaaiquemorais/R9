@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Toaster } from 'react-hot-toast'
 import { syncFromSupabase } from './utils/calendar'
+import { AuthProvider } from './contexts/AuthContext'
 import Hero from './components/Hero'
 import Services from './components/Services'
 import BookingModal from './components/BookingModal'
@@ -28,45 +29,52 @@ export default function App() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-background text-text font-sans antialiased">
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          style: {
-            background: '#1E1E1E',
-            color: '#F5F5F5',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '12px',
-            fontSize: '14px',
-            fontFamily: 'Inter, sans-serif',
-          },
-          success: {
-            iconTheme: { primary: '#FF6A00', secondary: '#fff' },
-          },
-          error: {
-            iconTheme: { primary: '#ef4444', secondary: '#fff' },
-          },
-        }}
-      />
+    <AuthProvider>
+      <div className="min-h-screen bg-background text-text font-sans antialiased">
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            style: {
+              background: '#1E1E1E',
+              color: '#F5F5F5',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '12px',
+              fontSize: '14px',
+              fontFamily: 'Inter, sans-serif',
+            },
+            success: { iconTheme: { primary: '#FF6A00', secondary: '#fff' } },
+            error:   { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+          }}
+        />
 
-      <main>
-        <Hero onBookNow={() => openBooking()} />
-        <Services onBookService={openBooking} />
-        <BusinessInfo />
-      </main>
+        <main>
+          <Hero onBookNow={() => openBooking()} />
+          <Services onBookService={openBooking} />
+          <BusinessInfo />
+        </main>
 
-      <Footer onBookNow={() => openBooking()} onOpenAdmin={() => setAdminOpen(true)} onOpenCancel={() => setCancelOpen(true)} />
+        <Footer
+          onBookNow={() => openBooking()}
+          onOpenAdmin={() => setAdminOpen(true)}
+          onOpenCancel={() => setCancelOpen(true)}
+        />
 
-      <BookingModal
-        isOpen={bookingOpen}
-        onClose={closeBooking}
-        preselectedService={preselectedService}
-      />
+        <BookingModal
+          isOpen={bookingOpen}
+          onClose={closeBooking}
+          preselectedService={preselectedService}
+        />
 
-      <AdminDashboard
-        isOpen={adminOpen}
-        onClose={() => setAdminOpen(false)}
-      />
-    </div>
+        <AdminDashboard
+          isOpen={adminOpen}
+          onClose={() => setAdminOpen(false)}
+        />
+
+        <CancelModal
+          isOpen={cancelOpen}
+          onClose={() => setCancelOpen(false)}
+        />
+      </div>
+    </AuthProvider>
   )
 }

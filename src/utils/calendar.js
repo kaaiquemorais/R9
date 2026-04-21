@@ -11,12 +11,12 @@ export function formatDateShort(date) {
 
 /* ── Mapeamento Supabase ↔ JS ── */
 function toRow(b) {
-  return { id: b.id, client_name: b.clientName, client_phone: b.clientPhone, service: typeof b.service === 'object' ? JSON.stringify(b.service) : b.service, date_str: b.dateStr, time: b.time, reminder: b.reminder, status: b.status || 'confirmed', created_at: b.createdAt }
+  return { id: b.id, client_name: b.clientName, client_phone: b.clientPhone, service: typeof b.service === 'object' ? JSON.stringify(b.service) : b.service, date_str: b.dateStr, time: b.time, reminder: b.reminder, status: b.status || 'pending', created_at: b.createdAt, user_id: b.userId || null }
 }
 function fromRow(r) {
   let service = r.service
   try { if (typeof r.service === 'string' && r.service.startsWith('{')) service = JSON.parse(r.service) } catch {}
-  return { id: r.id, clientName: r.client_name, clientPhone: r.client_phone, service, dateStr: r.date_str, time: r.time, reminder: r.reminder, status: r.status, createdAt: r.created_at }
+  return { id: r.id, clientName: r.client_name, clientPhone: r.client_phone, service, dateStr: r.date_str, time: r.time, reminder: r.reminder, status: r.status, createdAt: r.created_at, userId: r.user_id }
 }
 
 /* ── localStorage ── */
@@ -206,6 +206,19 @@ export async function getClientScore(phone) {
     const { data } = await supabase.from('client_scores').select('score,no_shows').eq('phone', cleaned).single()
     return data || { score: SCORE_DEFAULT, no_shows: 0 }
   } catch { return { score: SCORE_DEFAULT, no_shows: 0 } }
+}
+
+export async function checkUserHasActiveBooking(userId) {
+  if (!userId) return false
+  try {
+    const { data, error } = await supabase
+      .from('bookings').select('id')
+      .eq('user_id', userId)
+      .in('status', ['pending', 'confirmed'])
+      .limit(1)
+    if (error) throw error
+    return data.length > 0
+  } catch { return false }
 }
 
 export async function checkPhoneScore(phone) {
