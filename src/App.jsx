@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Toaster } from 'react-hot-toast'
 import { syncFromSupabase } from './utils/calendar'
-import { AuthProvider } from './contexts/AuthContext'
 import Hero from './components/Hero'
 import Services from './components/Services'
 import BookingModal from './components/BookingModal'
@@ -29,8 +28,7 @@ export default function App() {
   }, [])
 
   return (
-    <AuthProvider>
-      <div className="min-h-screen bg-background text-text font-sans antialiased">
+    <div className="min-h-screen bg-background text-text font-sans antialiased">
         <Toaster
           position="top-center"
           toastOptions={{
@@ -75,6 +73,5 @@ export default function App() {
           onClose={() => setCancelOpen(false)}
         />
       </div>
-    </AuthProvider>
   )
 }
