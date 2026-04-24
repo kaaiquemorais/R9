@@ -167,7 +167,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
 
     const hasActive = await checkPhoneHasActiveBooking(clientPhone.trim())
     if (hasActive) {
-      toast.error('Este número já atingiu o limite de agendamentos ativos. Cancele um anterior para agendar novamente.')
+      toast.error('Você já tem um agendamento ativo. Cancele o anterior para agendar de novo.')
       return
     }
 

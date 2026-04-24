@@ -167,7 +167,7 @@ export async function checkPhoneBlocked(phone) {
   }
 }
 
-const MAX_ACTIVE_BOOKINGS = 2 // máximo de agendamentos ativos por telefone
+const MAX_ACTIVE_BOOKINGS = 1 // máximo de agendamentos ativos por telefone
 
 export async function checkPhoneHasActiveBooking(phone) {
   const cleaned = phone.replace(/\D/g, '')
