@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Bell, AlertTriangle } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Bell, AlertTriangle, Mail } from 'lucide-react'
 import { format, startOfDay, isBefore } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { SERVICES, TIME_SLOTS } from '../data/services'
@@ -13,6 +13,7 @@ import {
   isSlotBooked,
   isDayFullyBlocked,
 } from '../utils/calendar'
+import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 
 const LOGO = 'https://i.postimg.cc/Vs2HNR1x/logo-r9-certo.png'
@@ -56,6 +57,7 @@ function buildGoogleCalUrl(booking, reminderMinutes) {
 }
 
 export default function BookingModal({ isOpen, onClose, preselectedService }) {
+  const { user, profile } = useAuth()
   const [step, setStep]                     = useState(1)
   const [selectedServices, setSelectedServices] = useState(preselectedService ? [preselectedService] : [])
   const [selectedDate, setSelectedDate]     = useState(null)
@@ -106,6 +108,14 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
   }, [isOpen, preselectedService])
 
   if (!isOpen) return null
+
+  if (!user) {
+    return (
+      <ModalWrapper onClose={onClose}>
+        <AuthGate />
+      </ModalWrapper>
+    )
+  }
 
   const today = startOfDay(new Date())
 
@@ -180,6 +190,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
       clientPhone: clientPhone.trim(),
       status: 'pending',
       createdAt: new Date().toISOString(),
+      userId: profile?.id || null,
     }
 
     await saveBooking(booking)
@@ -523,6 +534,127 @@ function BookingDetail({ icon, label, value }) {
         {label}
       </div>
       <span className="text-text text-xs font-semibold text-right capitalize">{value}</span>
+    </div>
+  )
+}
+
+function AuthGate() {
+  const { sendOtp, verifyOtp } = useAuth()
+  const [phase, setPhase]     = useState('email')
+  const [email, setEmail]     = useState('')
+  const [code, setCode]       = useState('')
+  const [sending, setSending] = useState(false)
+  const [verifying, setVerifying] = useState(false)
+
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+
+  const handleSend = async () => {
+    if (!validEmail) {
+      toast.error('Informe um e-mail válido')
+      return
+    }
+    setSending(true)
+    const { error } = await sendOtp(email)
+    setSending(false)
+    if (error) {
+      toast.error(error.message || 'Erro ao enviar código')
+      return
+    }
+    toast.success('Código enviado para seu e-mail')
+    setPhase('code')
+  }
+
+  const handleVerify = async () => {
+    if (code.trim().length < 6) {
+      toast.error('Informe o código de 6 dígitos')
+      return
+    }
+    setVerifying(true)
+    const { error } = await verifyOtp(email, code)
+    setVerifying(false)
+    if (error) {
+      toast.error('Código inválido ou expirado')
+      return
+    }
+    toast.success('Login confirmado!')
+  }
+
+  return (
+    <div className="flex flex-col items-center text-center py-4 px-2 gap-5">
+      <div className="w-16 h-16 rounded-full bg-primary/15 border-2 border-primary/40 flex items-center justify-center">
+        <Mail size={26} className="text-primary" />
+      </div>
+
+      <div>
+        <h3 className="text-xl font-black mb-1">Faça login para agendar</h3>
+        <p className="text-text-muted text-sm">
+          {phase === 'email'
+            ? 'Informe seu e-mail e enviaremos um código de acesso.'
+            : `Enviamos um código para ${email}. Confira sua caixa de entrada.`}
+        </p>
+      </div>
+
+      {phase === 'email' && (
+        <div className="w-full space-y-3">
+          <div className="relative">
+            <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input
+              type="email"
+              autoFocus
+              placeholder="seu@email.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSend()}
+              className="input-field pl-10"
+            />
+          </div>
+          <button
+            onClick={handleSend}
+            disabled={!validEmail || sending}
+            className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-300
+              ${validEmail && !sending
+                ? 'bg-gradient-to-r from-primary to-primary-light text-white hover:shadow-[0_0_30px_rgba(255,106,0,0.4)]'
+                : 'bg-surface-2 text-text-muted cursor-not-allowed'
+              }`}
+          >
+            {sending ? 'Enviando...' : 'Enviar código'}
+          </button>
+        </div>
+      )}
+
+      {phase === 'code' && (
+        <div className="w-full space-y-3">
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            autoFocus
+            maxLength={6}
+            placeholder="Código de 6 dígitos"
+            value={code}
+            onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
+            onKeyDown={e => e.key === 'Enter' && handleVerify()}
+            className="input-field text-center text-lg tracking-[0.4em] font-bold"
+          />
+          <button
+            onClick={handleVerify}
+            disabled={code.length < 6 || verifying}
+            className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-300
+              ${code.length >= 6 && !verifying
+                ? 'bg-gradient-to-r from-primary to-primary-light text-white hover:shadow-[0_0_30px_rgba(255,106,0,0.4)]'
+                : 'bg-surface-2 text-text-muted cursor-not-allowed'
+              }`}
+          >
+            {verifying ? 'Verificando...' : 'Confirmar'}
+          </button>
+          <button
+            onClick={() => { setCode(''); setPhase('email') }}
+            className="w-full py-2 text-xs text-text-muted hover:text-text transition-colors"
+          >
+            Usar outro e-mail
+          </button>
+        </div>
+      )}
     </div>
   )
 }

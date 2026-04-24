@@ -8,13 +8,11 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Sessão atual
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       setLoading(false)
     })
 
-    // Escuta mudanças de auth (login, logout, refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null)
     })
@@ -22,24 +20,28 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const signInWithGoogle = () =>
-    supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin },
+  const sendOtp = (email) =>
+    supabase.auth.signInWithOtp({
+      email: email.trim().toLowerCase(),
+      options: { shouldCreateUser: true },
+    })
+
+  const verifyOtp = (email, token) =>
+    supabase.auth.verifyOtp({
+      email: email.trim().toLowerCase(),
+      token: token.trim(),
+      type: 'email',
     })
 
   const signOut = () => supabase.auth.signOut()
 
-  // Dados úteis extraídos do perfil Google
   const profile = user ? {
-    id:       user.id,
-    name:     user.user_metadata?.full_name  || '',
-    email:    user.email                     || '',
-    avatar:   user.user_metadata?.avatar_url || '',
+    id:    user.id,
+    email: user.email || '',
   } : null
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, sendOtp, verifyOtp, signOut }}>
       {children}
     </AuthContext.Provider>
   )
