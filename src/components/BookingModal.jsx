@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Bell, AlertTriangle, Mail } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Check, Calendar, Clock, User, Phone, Bell, AlertTriangle, Mail, LogOut } from 'lucide-react'
 import { format, startOfDay, isBefore } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { SERVICES, TIME_SLOTS } from '../data/services'
@@ -57,7 +57,7 @@ function buildGoogleCalUrl(booking, reminderMinutes) {
 }
 
 export default function BookingModal({ isOpen, onClose, preselectedService }) {
-  const { user, profile } = useAuth()
+  const { user, profile, signOut } = useAuth()
   const [step, setStep]                     = useState(1)
   const [selectedServices, setSelectedServices] = useState(preselectedService ? [preselectedService] : [])
   const [selectedDate, setSelectedDate]     = useState(null)
@@ -209,6 +209,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
   if (confirmed && confirmedBooking) {
     return (
       <ModalWrapper onClose={onClose}>
+        <LoggedInBadge email={profile?.email} onSignOut={signOut} />
         <div className="flex flex-col items-center text-center py-6 px-2 gap-5">
           <div className="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-500/40 flex items-center justify-center">
             <Clock size={28} className="text-amber-400" />
@@ -279,6 +280,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }) {
 
   return (
     <ModalWrapper onClose={onClose}>
+      <LoggedInBadge email={profile?.email} onSignOut={signOut} />
       <div className="min-h-[320px]">
         {step === 1 && (
           <StepService services={SERVICES} selected={selectedServices} onToggle={toggleService} combined={combinedService} />
@@ -534,6 +536,27 @@ function BookingDetail({ icon, label, value }) {
         {label}
       </div>
       <span className="text-text text-xs font-semibold text-right capitalize">{value}</span>
+    </div>
+  )
+}
+
+function LoggedInBadge({ email, onSignOut }) {
+  if (!email) return null
+  return (
+    <div className="flex items-center justify-between gap-3 mb-5 px-3 py-2 rounded-xl bg-surface-2 border border-white/8">
+      <div className="flex items-center gap-2 min-w-0">
+        <Mail size={13} className="text-primary flex-shrink-0" />
+        <span className="text-text-muted text-xs">Logado como</span>
+        <span className="text-text text-xs font-semibold truncate">{email}</span>
+      </div>
+      <button
+        onClick={onSignOut}
+        title="Sair"
+        className="flex items-center gap-1.5 text-text-muted hover:text-text text-xs font-medium px-2 py-1 rounded-lg hover:bg-surface-3 transition-all flex-shrink-0"
+      >
+        <LogOut size={12} />
+        Sair
+      </button>
     </div>
   )
 }
